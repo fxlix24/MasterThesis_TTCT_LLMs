@@ -1,0 +1,17 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# ---- Virtual environments ----
+venv/
+.venv/
+
+# ---- Editor / OS clutter ----
+.DS_Store
+.idea/
+.vscode/
+
+# ---- Secrets ----
+automation.env
+.env
