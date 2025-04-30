@@ -20,7 +20,7 @@ class OpenAIStore(LLMStore):
             input=prompt,
         )
         text = response.output_text if hasattr(response, "output_text") else None
-        tokens_used = getattr(response.usage, "total_tokens", None)
+        tokens_used = getattr(response.usage, "output_tokens", None)
         return text, tokens_used
 
 

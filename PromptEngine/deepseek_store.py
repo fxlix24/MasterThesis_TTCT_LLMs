@@ -22,7 +22,7 @@ class DeepSeekStore(LLMStore):
                 {"role": "user", "content": prompt}],
         )
         text = response.choices[0].message.content
-        tokens_used = response.usage.total_tokens
+        tokens_used = response.usage.completion_tokens
         return text, tokens_used
 
 

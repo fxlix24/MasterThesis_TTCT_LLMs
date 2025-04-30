@@ -16,3 +16,4 @@ response = model.generate_content("List three of the most excentric things one c
 
 # Print the generated response text
 print(response.text)
+print(response.usage_metadata.candidates_token_count)
