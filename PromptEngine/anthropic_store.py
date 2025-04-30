@@ -6,6 +6,7 @@ Requires:  pip install anthropic
 import os
 import anthropic
 from core_store import LLMStore
+from get_prompt import get_active_prompt
 
 
 client = anthropic.Anthropic()
@@ -25,4 +26,4 @@ class AnthropicStore(LLMStore):
         return text, resp.usage.output_tokens
 
 if __name__ == "__main__":
-    AnthropicStore().run("List as many alternate uses for a brick as you can.")
+    AnthropicStore().run(get_active_prompt())

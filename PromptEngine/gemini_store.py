@@ -6,6 +6,7 @@ Requires:  pip install google-generativeai
 import os, json
 import google.generativeai as genai
 from core_store import LLMStore
+from get_prompt import get_active_prompt
 
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
@@ -24,4 +25,4 @@ class GeminiStore(LLMStore):
 
 
 if __name__ == "__main__":
-    GeminiStore().run("List as many alternate uses for a brick as you can.")
+    GeminiStore().run(get_active_prompt())

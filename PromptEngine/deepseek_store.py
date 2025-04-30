@@ -6,6 +6,7 @@ Requires:  pip install openai
 import os
 from openai import OpenAI
 from core_store import LLMStore
+from get_prompt import get_active_prompt
 
 
 client = OpenAI(api_key=os.environ.get("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
@@ -26,4 +27,4 @@ class DeepSeekStore(LLMStore):
 
 
 if __name__ == "__main__":
-    DeepSeekStore().run("List as many alternate uses for a brick as you can.")
+    DeepSeekStore().run(get_active_prompt())
