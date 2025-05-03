@@ -20,7 +20,7 @@ class GeminiStore(LLMStore):
             prompt
         )
         text = resp.text if resp.text else None
-        tokens_used = resp.usage_metadata.candidates_token_count if resp.usage_metadata else None
+        tokens_used = resp.usage_metadata.total_token_count - resp.usage_metadata.prompt_token_count if resp.usage_metadata else None
         return text, tokens_used
 
 
