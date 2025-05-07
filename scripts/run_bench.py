@@ -1,5 +1,5 @@
 # Main script that initates the data collection for the currently selected AUT Experiment determined in the automation.env file with the parameter PROJECT_PHASE
-import itertools, sys, time, json, os
+import sys, os
 from pathlib import Path
 from dotenv import load_dotenv
 from promptengine.get_prompt import get_active_prompt        
@@ -45,22 +45,11 @@ VENDOR_STORE = {
 def call_model(vendor: str, prompt: str, model: str):
     store = VENDOR_STORE[vendor]
     req = store.run(prompt, model=model)
-    text   = "\n".join(r.bullet_text for r in req.responses)
-    tokens = req.total_tokens
-
-    return {
-        "db_id":   req.id,
-        "vendor":  vendor,
-        "model":   req.model,
-        "tokens":  tokens,
-        "text":    text,
-    }
+    return req.total_tokens
 
 # ----- 4. Main loop -------------------------------------
-results = []
 for vendor, models in MODEL_MATRIX.items():
     for model in models:
         for _ in range(int(RUNS_PER_MODEL)):
-            res = call_model(vendor, prompt, model)
-            results.append(res)
-            print(f"[{vendor}/{model}] tokens={res['tokens']}")
+            res_token = call_model(vendor, prompt, model)
+            print(f"[{vendor}/{model}] tokens={res_token}")
