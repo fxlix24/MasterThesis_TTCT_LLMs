@@ -1,10 +1,10 @@
 # Main script that initates the data collection for the currently selected AUT Experiment determined in the automation.env file with the parameter PROJECT_PHASE
-# ------- !!! WARNING THIS SCRIPT IS NOT READY FOR USE YET !!! -------
 import itertools, sys, time, json, os
 from pathlib import Path
 from dotenv import load_dotenv
 from promptengine.get_prompt import get_active_prompt        
 
+# import of storing implementations
 from promptengine.openai_store import OpenAIStore
 from promptengine.gemini_store import GeminiStore
 from promptengine.deepseek_store import DeepSeekStore
@@ -34,7 +34,7 @@ go = input("Proceed? [y/N] ").strip().lower()
 if go != "y":
     sys.exit("Aborted.\n")
 
-# ----- 3. Little helpers --------------------------------
+# ----- 3. Initialize Storing --------------------------------
 VENDOR_STORE = {
     "openai":    OpenAIStore(),
     "gemini":    GeminiStore(),

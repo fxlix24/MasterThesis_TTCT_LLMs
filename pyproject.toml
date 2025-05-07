@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=65.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "promptengine"
+version = "0.0.0"
+description = "LLM benchmarking tools for the Master Thesis"
+authors = [{name = "Felix"}]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["promptengine"]
