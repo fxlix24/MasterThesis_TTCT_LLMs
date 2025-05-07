@@ -100,7 +100,7 @@ class LLMStore(abc.ABC):
 
     # child implements this ------------------------------------------------
     @abc.abstractmethod
-    def _call_llm(self, prompt: str) -> Tuple[str, int]:
+    def _call_llm(self, prompt: str,  model: str | None = None) -> Tuple[str, int]:
         """Return (full_text_response, total_tokens_used)."""
         ...
 

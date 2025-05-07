@@ -5,18 +5,20 @@ Requires:  pip install anthropic
 
 import os
 import anthropic
-from core_store import LLMStore
-from get_prompt import get_active_prompt
+from PromptEngine.core_store import LLMStore
+from PromptEngine.get_prompt import get_active_prompt
 
 
 client = anthropic.Anthropic()
 
 class AnthropicStore(LLMStore):
-    model_name = os.getenv("ANTHROPIC_MODEL")
+    _env_model = os.getenv("ANTHROPIC_MODEL") #Used when script is run individually 
 
-    def _call_llm(self, prompt):
+    def _call_llm(self, prompt, model: str | None = None):
+        model_name = model or self._env_model
+
         resp = client.messages.create(
-            model=self.model_name,
+            model=model_name,
             max_tokens=1000,
             system="You are a helpful assistant.",
             messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],

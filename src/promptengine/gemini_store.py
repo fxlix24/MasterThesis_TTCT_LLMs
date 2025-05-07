@@ -5,17 +5,19 @@ Requires:  pip install google-generativeai
 
 import os, json
 import google.generativeai as genai
-from core_store import LLMStore
-from get_prompt import get_active_prompt
+from PromptEngine.core_store import LLMStore
+from PromptEngine.get_prompt import get_active_prompt
 
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 class GeminiStore(LLMStore):
-    model_name = os.getenv("GOOGLE_MODEL")
+    _env_model = os.getenv("GOOGLE_MODEL") #Used when script is run individually 
 
-    def _call_llm(self, prompt: str):
-        model = genai.GenerativeModel(self.model_name)
+    def _call_llm(self, prompt: str, model: str | None = None):
+        model_name = model or self._env_model
+
+        model = genai.GenerativeModel(model_name)
         resp  = model.generate_content("You are a creative assistant. " +
             prompt
         )
