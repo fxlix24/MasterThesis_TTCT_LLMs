@@ -103,8 +103,8 @@ class LLMStore(abc.ABC):
         ...
 
     # public API -----------------------------------------------------------
-    def run(self, prompt: str) -> Request:
-        model_name, full_text, used_tokens = self._call_llm(prompt)
+    def run(self, prompt: str, model: str | None = None) -> Request:
+        model_name, full_text, used_tokens = self._call_llm(prompt, model)
 
         # store request
         req = Request(

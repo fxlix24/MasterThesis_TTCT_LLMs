@@ -14,7 +14,7 @@ load_dotenv(Path(__file__).with_name("automation.env"))   # credentials
 
 # ----- 1. Define which models to test ------------------
 MODEL_MATRIX: dict[str, list[str]] = {
-    "openai":  ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo", "o3", "o1", "o4-mini"],
+    "openai":  ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "o3", "o1", "o4-mini"],
     "gemini":  ["gemini-2.0-flash", "gemini-2.5-flash-preview-04-17", "gemini-2.5-pro-preview-05-06", "gemini-1.5-pro"],
     "anthropic": ["claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219"],
     "deepseek":  ["deepseek-chat", "deepseek-reasoner"],
@@ -44,8 +44,17 @@ VENDOR_STORE = {
 
 def call_model(vendor: str, prompt: str, model: str):
     store = VENDOR_STORE[vendor]
-    text, tokens = store._call_llm(prompt, model=model)
-    return dict(vendor=vendor, model=model, text=text, tokens=tokens)
+    req = store.run(prompt, model=model)
+    text   = "\n".join(r.bullet_text for r in req.responses)
+    tokens = req.total_tokens
+
+    return {
+        "db_id":   req.id,
+        "vendor":  vendor,
+        "model":   req.model,
+        "tokens":  tokens,
+        "text":    text,
+    }
 
 # ----- 4. Main loop -------------------------------------
 results = []
@@ -55,9 +64,3 @@ for vendor, models in MODEL_MATRIX.items():
             res = call_model(vendor, prompt, model)
             results.append(res)
             print(f"[{vendor}/{model}] tokens={res['tokens']}")
-
-# ----- 5. Persist / post-process -------------------------
-Path("out").mkdir(exist_ok=True)
-ts   = time.strftime("%Y%m%d-%H%M%S")
-Path(f"out/raw_{ts}.jsonl").write_text("\n".join(json.dumps(r) for r in results))
-print(f"\nSaved {len(results)} rows to out/raw_{ts}.jsonl")
