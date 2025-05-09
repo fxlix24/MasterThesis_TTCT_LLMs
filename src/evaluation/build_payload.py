@@ -12,8 +12,8 @@ Usage
 from __future__ import annotations
 from typing import Dict
 import re
-# ── helper -------------------------------------------------------------
 
+# ── helper -------------------------------------------------------------
 def _clean_response(text: str):
     """
     Return (use, detail) or None if the line is meta / empty.
@@ -46,6 +46,6 @@ def build_payload(req) -> Dict[str, object]:
 
     return {
         "request_id": req.id,
-        "original_prompt": req.prompt,   # drop this if your judge doesn’t need it
+        "original_prompt": req.prompt,   
         "ideas": ideas,                  # structured responses
     }

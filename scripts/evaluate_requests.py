@@ -4,9 +4,9 @@ Iterates over all Request records and stores / updates Evaluation rows.
 The evaluation *instructions* are constant, the *input* is passed as JSON.
 """
 
-import os, sys, json, re
+import os, sys, json
 from sqlalchemy.orm import joinedload
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 # ── project-local imports ───────────────────────────────────────────────
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -121,13 +121,13 @@ def main() -> None:
             existing.fluency     = result["fluency"]
             existing.flexibility = result["flexibility"]
             existing.elaboration = result["elaboration"]
-            existing.timestamp   = datetime.utcnow()
+            existing.timestamp   = datetime.now(timezone.utc)
         else:
             sess.add(
                 Evaluation(
                     request_id=req.id,
                     **result,
-                    timestamp=datetime.utcnow(),
+                    timestamp=datetime.now(timezone.utc),
                 )
             )
 

@@ -9,8 +9,9 @@ Import this file from all your *_store.py scripts.
 • Abstract class LLMStore – child scripts implement only _call_llm()
 """
 from __future__ import annotations
-import os, datetime, re, abc
-from typing import List, Tuple
+import os, re, abc
+from typing import Tuple
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 from sqlalchemy import (
@@ -41,7 +42,7 @@ class Request(Base):
 
     id              = Column(Integer, primary_key=True)
     prompt          = Column(Text, nullable=False)
-    timestamp       = Column(DateTime, default=datetime.datetime.utcnow)
+    timestamp       = Column(DateTime, default=datetime.now(timezone.utc))
     model           = Column(String(255), nullable=False)
     experiment_phase= Column(String(255), default="n/a")
     total_tokens    = Column(Integer)
@@ -57,7 +58,7 @@ class Response(Base):
     request_id    = Column(Integer, ForeignKey("requests.id"), nullable=False)
     bullet_number = Column(Integer, nullable=False)
     bullet_text   = Column(Text, nullable=False)
-    timestamp     = Column(DateTime, default=datetime.datetime.utcnow)
+    timestamp     = Column(DateTime, default=datetime.now(timezone.utc))
 
 class Evaluation(Base):
     __tablename__ = "evaluations"
@@ -70,7 +71,7 @@ class Evaluation(Base):
     flexibility  = Column(Integer)
     elaboration  = Column(Integer)
 
-    timestamp    = Column(DateTime, default=datetime.datetime.utcnow)
+    timestamp    = Column(DateTime, default=datetime.now(timezone.utc))
 
 # Create tables (harmless if they already exist)
 Base.metadata.create_all(engine)

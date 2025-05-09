@@ -3,16 +3,6 @@ import json, os, random, openai
 from typing import Any, Dict, Optional
 
 class LLMJudge:
-    """
-    Thin wrapper around the OpenAI “LLM-as-a-Judge”.
-    `instructions`  – how to evaluate (system role)
-    `input_payload` – the actual data to be judged (user role, JSON)
-                     {
-                       "request_id": 123,
-                       "original_prompt": "...",
-                       "responses": ["idea 1", "idea 2", ...]
-                     }
-    """
 
     def __init__(self, model) -> None:
         self.model   = model if model is not None else "placeholder-judge"
@@ -48,14 +38,15 @@ class LLMJudge:
         # ------------------------------------------------------------------ #
         try:
             response = self.client.responses.create(
-            model=self.model,
-            instructions=instructions.strip(),
-            input=json.dumps(input_payload, ensure_ascii=False),
-            temperature=0.0,
+                model=self.model,
+                instructions=instructions.strip(),
+                input=json.dumps(input_payload, ensure_ascii=False),
+                temperature=0.0,
             )
         
             content = response.output_text if hasattr(response, "output_text") else None
             return json.loads(content)
+        
         except Exception as err:
             print(f"[LLMJudge] OpenAI call failed: {err}")
             return None
