@@ -5,25 +5,27 @@ Requires:  pip install openai
 
 import os
 from openai import OpenAI
-from core_store import LLMStore
-from get_prompt import get_active_prompt
+from promptengine.core_store import LLMStore
+from promptengine.get_prompt import get_active_prompt
 
 
 client = OpenAI(api_key=os.environ.get("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
 
 class DeepSeekStore(LLMStore):
-    model_name = os.getenv("DEEPSEEK_MODEL")
+    _env_model = os.getenv("DEEPSEEK_MODEL") #Used when script is run individually 
 
-    def _call_llm(self, prompt: str):
+    def _call_llm(self, prompt: str, model: str | None = None):
+        model_name = model if model is not None else self._env_model
+        
         response = client.chat.completions.create(
-            model=self.model_name,
+            model=model_name,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant"},
                 {"role": "user", "content": prompt}],
         )
         text = response.choices[0].message.content
         tokens_used = response.usage.completion_tokens
-        return text, tokens_used
+        return model_name, text, tokens_used
 
 
 if __name__ == "__main__":

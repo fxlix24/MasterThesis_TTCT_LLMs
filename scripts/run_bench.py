@@ -1,24 +1,23 @@
 # Main script that initates the data collection for the currently selected AUT Experiment determined in the automation.env file with the parameter PROJECT_PHASE
-# ------- !!! WARNING THIS SCRIPT IS NOT READY FOR USE YET !!! -------
-import itertools, sys, time, json, os
+import sys, os
 from pathlib import Path
 from dotenv import load_dotenv
-from PromptEngine.get_prompt import get_active_prompt        
+from promptengine.get_prompt import get_active_prompt        
 
-from PromptEngine.openAI_store import OpenAIStore
-from PromptEngine.gemini_store import GeminiStore
-from PromptEngine.deepseek_store import DeepSeekStore
-from PromptEngine.anthropic_store import AnthropicStore
+# import of storing implementations
+from promptengine.openai_store import OpenAIStore
+from promptengine.gemini_store import GeminiStore
+from promptengine.deepseek_store import DeepSeekStore
+from promptengine.anthropic_store import AnthropicStore
 
 load_dotenv(Path(__file__).with_name("automation.env"))   # credentials
 
 # ----- 1. Define which models to test ------------------
 MODEL_MATRIX: dict[str, list[str]] = {
-    "openai":  ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "o3", "o4-mini"],
-    "gemini":  ["gemini-2.0-flash", "gemini-2.5-pro"],
+    "openai":  ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "o3", "o1", "o4-mini"],
+    "gemini":  ["gemini-2.0-flash", "gemini-2.5-flash-preview-04-17", "gemini-2.5-pro-preview-05-06", "gemini-1.5-pro"],
     "anthropic": ["claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219"],
-    "deepseek":  ["deepseek-chat"],
-    # … add more vendors / models here …
+    "deepseek":  ["deepseek-chat", "deepseek-reasoner"],
 }
 RUNS_PER_MODEL = os.getenv("RUNS_PER_MODEL")
 
@@ -35,7 +34,7 @@ go = input("Proceed? [y/N] ").strip().lower()
 if go != "y":
     sys.exit("Aborted.\n")
 
-# ----- 3. Little helpers --------------------------------
+# ----- 3. Initialize Storing --------------------------------
 VENDOR_STORE = {
     "openai":    OpenAIStore(),
     "gemini":    GeminiStore(),
@@ -43,22 +42,14 @@ VENDOR_STORE = {
     "deepseek": DeepSeekStore(),
 }
 
-def call_model(vendor: str, model: str, prompt: str):
+def call_model(vendor: str, prompt: str, model: str):
     store = VENDOR_STORE[vendor]
-    text, tokens = store._call_llm(prompt, model=model)
-    return dict(vendor=vendor, model=model, text=text, tokens=tokens)
+    req = store.run(prompt, model=model)
+    return req.total_tokens
 
 # ----- 4. Main loop -------------------------------------
-results = []
 for vendor, models in MODEL_MATRIX.items():
     for model in models:
-        for _ in range(RUNS_PER_MODEL):
-            res = call_model(vendor, model, prompt)
-            results.append(res)
-            print(f"[{vendor}/{model}] tokens={res['tokens']}")
-
-# ----- 5. Persist / post-process -------------------------
-Path("out").mkdir(exist_ok=True)
-ts   = time.strftime("%Y%m%d-%H%M%S")
-Path(f"out/raw_{ts}.jsonl").write_text("\n".join(json.dumps(r) for r in results))
-print(f"\nSaved {len(results)} rows to out/raw_{ts}.jsonl")
+        for _ in range(int(RUNS_PER_MODEL)):
+            res_token = call_model(vendor, prompt, model)
+            print(f"[{vendor}/{model}] tokens={res_token}")

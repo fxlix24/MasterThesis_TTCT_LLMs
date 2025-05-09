@@ -92,26 +92,24 @@ def extract_bullets(text: str):
 class LLMStore(abc.ABC):
     """Generic “call-LLM → store prompt & ideas” workflow."""
 
-    model_name: str = "<override in child>"
-
     def __init__(self, phase: str = os.getenv("PROJECT_PHASE")):
         self.phase    = phase
         self.session  = Session()
 
     # child implements this ------------------------------------------------
     @abc.abstractmethod
-    def _call_llm(self, prompt: str) -> Tuple[str, int]:
-        """Return (full_text_response, total_tokens_used)."""
+    def _call_llm(self, prompt: str,  model: str | None = None) -> Tuple[str, str, int]:
+        """Return (model_name, full_text_response, total_tokens_used)."""
         ...
 
     # public API -----------------------------------------------------------
-    def run(self, prompt: str) -> Request:
-        full_text, used_tokens = self._call_llm(prompt)
+    def run(self, prompt: str, model: str | None = None) -> Request:
+        model_name, full_text, used_tokens = self._call_llm(prompt, model)
 
         # store request
         req = Request(
             prompt=prompt,
-            model=self.model_name,
+            model=model_name,
             experiment_phase=self.phase,
             total_tokens=used_tokens,
         )
