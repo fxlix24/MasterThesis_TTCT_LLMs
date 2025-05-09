@@ -79,9 +79,21 @@ Base.metadata.create_all(engine)
 # 3. helper: extract numbered bullets – keeps #1 even at start of text  #
 # --------------------------------------------------------------------- #
 _BULLET_RE = re.compile(
-    r'(?:^|\n)\s*(?:\d+\.\s*|[*\-•]\s+)(.*?)\s*(?=\n\s*(?:\d+\.|[*\-•])|\Z)',
-    re.DOTALL,
-)    
+    r'''
+        (?:^|\n)                    # start of text OR a new line
+        \s*                         # optional indent
+        (?:\d+\.\s* | [*\-•]\s+)    # bullet marker: "1.", "-", "•", …
+        (.*?)                       # the bullet itself (non-greedy)
+
+        (?=                         # … until we hit one of these:
+            \n\s*(?:\d+\.\s*|[*\-•]) #   1) another bullet
+          | \n\s*#+\s               #   2) a Markdown heading (###, ##, #…)
+          | \n{2,}                  #   3) a completely blank line
+          | \Z                      #   4) end of text
+        )
+    ''',
+    re.DOTALL | re.VERBOSE | re.MULTILINE,
+)
 
 def extract_bullets(text: str):
     bullets = [m.group(1).strip() for m in _BULLET_RE.finditer(text)]
