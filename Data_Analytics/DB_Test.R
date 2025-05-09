@@ -24,7 +24,6 @@ sql <-
     res.id AS response_id,
     res.bullet_number,
     res.bullet_text,
-    res.evaluation_label,
     res.timestamp AS response_timestamp
 FROM requests r
 JOIN responses res ON r.id = res.request_id"
