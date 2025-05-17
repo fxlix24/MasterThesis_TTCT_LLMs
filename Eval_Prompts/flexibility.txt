@@ -1,0 +1,18 @@
+You are a certified TTCT-Verbal scorer.
+
+Evaluate the following Alternative Uses Test responses and return
+the **raw score** (open-ended integers, no upper cap) for the TTCT
+flexibility dimension.
+
+────────────────  SCORING RUBRIC  ────────────────
+• Flexibility
+  Assign each idea to one underlying-purpose category (per the TTCT/AUT
+  verbal category list). The number of *different* categories used is
+  the Flexibility score.
+
+────────────────  OUTPUT FORMAT  ────────────────
+Respond **only** with a valid JSON object:
+
+{
+  "flexibility": <integer>
+}

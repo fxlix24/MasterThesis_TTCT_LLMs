@@ -4,64 +4,108 @@ Iterates over all Request records and stores / updates Evaluation rows.
 The evaluation *instructions* are constant, the *input* is passed as JSON.
 """
 
-import os, sys, json
-from sqlalchemy.orm import joinedload
+from __future__ import annotations
+
+import os
+import re
+import sys
+import json
 from datetime import datetime, timezone
 from pathlib import Path
-# ── project-local imports ───────────────────────────────────────────────
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC  = os.path.join(ROOT, "src")
-if SRC not in sys.path:
-    sys.path.insert(0, SRC)
+from typing import Dict, List
 
-from promptengine.core_store import Session, Request, Evaluation          
-from evaluation.llm_judge import LLMJudge 
-from evaluation.build_payload import build_payload                   
-# ────────────────────────────────────────────────────────────────────────
+from sqlalchemy.orm import joinedload
 
+# ── project‑local imports ──────────────────────────────────────────────
+ROOT = Path(__file__).resolve().parents[1]
+SRC  = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
-# ── 1. static evaluation set up (no request-specific info!) ──────
-prompt_file = os.getenv("EVALUATION_TEXTFILE")
-if prompt_file is None:
+from promptengine.core_store import Session, Request, Evaluation      
+from evaluation.llm_judge        import LLMJudge                     
+from evaluation.build_payload    import build_payload                 
+# ───────────────────────────────────────────────────────────────────────
+
+# ── 1.  load *one prompt per dimension*  ───────────────────────────────
+DIMENSIONS: List[str] = [
+    "originality",
+    "fluency",
+    "flexibility",
+    "elaboration",
+]
+
+PROMPTS_DIR = os.getenv("EVAL_PROMPTS_DIR")
+if PROMPTS_DIR is None:
     raise RuntimeError(
-        "EVALUATION_TEXTFILE is not set in the environment (.env)."
+        "EVAL_PROMPTS_DIR is not set – point it to the folder containing the"
+        " four dimension‑specific prompt files (originality.txt, …)."
     )
 
-prompt_path = Path(prompt_file)
-if not prompt_path.is_absolute():
-    prompt_path = Path(ROOT) / prompt_path   # ROOT comes from your snippet
+prompt_dir_path = Path(PROMPTS_DIR).expanduser().resolve()
+if not prompt_dir_path.is_dir():
+    raise FileNotFoundError(f"Prompt directory not found: {prompt_dir_path}")
 
-if not prompt_path.exists():
-    raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
+EVAL_PROMPTS: Dict[str, str] = {}
+for dim in DIMENSIONS:
+    p = prompt_dir_path / f"{dim}.txt"
+    if not p.exists():
+        raise FileNotFoundError(f"Missing prompt file for '{dim}': {p}")
+    EVAL_PROMPTS[dim] = p.read_text(encoding="utf-8")
 
-EVAL_INSTRUCTIONS = prompt_path.read_text(encoding="utf-8")
 judge_model = os.getenv("JUDGE_MODEL")
 
+# ── 2.  helper – extract a *single* score from any judge response ——
+
+def _extract_score(dim: str, result) -> int:
+    if result is None:
+        raise ValueError("judge returned None")
+
+    # ─ dry‑run path (result is full dict) ────────────────────────────
+    if isinstance(result, dict):
+        if dim in result:
+            return int(result[dim])
+        if "score" in result:
+            return int(result["score"])
+        # fallback when evaluate() still returns all four dims
+        if all(k in result for k in DIMENSIONS):
+            return int(result[dim])
+
+    # ─ simple scalar already ─────────────────────────────────────────
+    if isinstance(result, (int, float)):
+        return int(result)
+
+    raise ValueError(
+        f"Cannot extract '{dim}' score from judge response: {result!r}")
+
+
+# ── 3.  main routine ───────────────────────────────────────────────────
 
 def main() -> None:
     sess = Session()
 
-    total = sess.query(Request).count()
-    already = sess.query(Evaluation).count()
-    print(f" {total} requests found ─ {already} already evaluated.")
+    total    = sess.query(Request).count()
+    already  = sess.query(Evaluation).count()
+    to_score = total - already
 
+    print(f"{total} requests found – {already} already evaluated.\n")
     if total == 0:
         print("Nothing to do – DB is empty.")
         return
-    
-    print("\n━━━━━━━━ Evaluation run preview ━━━━━━━━")
+
+    print("━━━━━━━━ Evaluation run preview ━━━━━━━━")
     print(f"Model to be used: {judge_model}")
-
-    # show the full prompt but wrapped to 80-columns so it’s readable
-    print("\nPrompt to be used:\n")
-    print(EVAL_INSTRUCTIONS)
-    print()
-
-    to_eval_if_skip = total - already
-    print(f"Database entries found: {total}")
-    print(f"Already evaluated:      {already}")
-    print(f"Would be evaluated now: {to_eval_if_skip} "
-        "(or all entries if you choose to overwrite)")
+    print("Dimension‑specific prompts:")
+    for d in DIMENSIONS:
+        m = re.search(r"────────────────\s*SCORING RUBRIC\s*────────────────(.*?)(?:────────────────|$)",
+                EVAL_PROMPTS[d], re.S)
+        if m:
+            rubric = m.group(1).strip()
+            # indent each line of the rubric for readability
+            for line in rubric.splitlines():
+                print(f"     {line}")
+        else:
+            print("     [no SCORING RUBRIC found]")
     print("────────────────────────────────────────\n")
 
     proceed = input("Proceed with these settings? (y/N): ").strip().lower()
@@ -69,20 +113,19 @@ def main() -> None:
         print("Aborted by user.")
         return
 
-    # ── 2. ask once whether to overwrite existing evaluations ───────────
+    # ── ask once whether to overwrite existing evaluations ──────────
     override = False
     if already:
-        user_in = input(
+        override = input(
             f"{already} evaluations already exist. Overwrite them? (y/N): "
-        ).strip().lower()
-        override = user_in == "y"
+        ).strip().lower() == "y"
         if override:
             print("Existing evaluations **will be updated**.\n")
 
-    # ── 3. init judge ───────────────────────────────────────────────────
+    # ── init judge client ────────────────────────────────────────────
     judge = LLMJudge(model=judge_model)
 
-    # ── 4. process each request ─────────────────────────────────────────
+    # ── iterate over requests ────────────────────────────────────────
     processed = success = failed = skipped = 0
 
     requests = (
@@ -105,37 +148,51 @@ def main() -> None:
             skipped += 1
             continue
 
-        # ---- build input payload ---------------------------------------
-        payload = build_payload(req) # Build Payload using seperate script 
-        result = judge.evaluate(EVAL_INSTRUCTIONS, payload)
+        # ---- build common payload ----------------------------------
+        payload = build_payload(req)
+        scores: Dict[str, int] = {}
 
-        if not result:
-            print(f"ID {req.id:>5} – evaluation failed")
-            sess.rollback()
-            failed += 1
+        # ---- evaluate *each* dimension sequentially -----------------
+        for dim in DIMENSIONS:
+            instructions = EVAL_PROMPTS[dim]
+            result       = judge.evaluate(instructions, payload)
+            try:
+                scores[dim] = _extract_score(dim, result)
+            except ValueError as err:
+                print(f"ID {req.id:>5} – {dim} evaluation failed: {err}")
+                sess.rollback()
+                failed += 1
+                break  # abandon this request entirely
+
+        if len(scores) != 4:
+            # at least one dimension failed – skip storing anything
             continue
 
-        # ---- store (insert or update) ----------------------------------
+        # ---- store (insert or update) only when *all four* present --
+        now_utc = datetime.now(timezone.utc)
         if existing:
-            existing.originality = result["originality"]
-            existing.fluency     = result["fluency"]
-            existing.flexibility = result["flexibility"]
-            existing.elaboration = result["elaboration"]
-            existing.timestamp   = datetime.now(timezone.utc)
+            existing.originality = scores["originality"]
+            existing.fluency     = scores["fluency"]
+            existing.flexibility = scores["flexibility"]
+            existing.elaboration = scores["elaboration"]
+            existing.timestamp   = now_utc
         else:
             sess.add(
                 Evaluation(
-                    request_id=req.id,
-                    **result,
-                    timestamp=datetime.now(timezone.utc),
+                    request_id  = req.id,
+                    originality = scores["originality"],
+                    fluency     = scores["fluency"],
+                    flexibility = scores["flexibility"],
+                    elaboration = scores["elaboration"],
+                    timestamp   = now_utc,
                 )
             )
 
         sess.commit()
-        print(f"ID {req.id:>5} – stored ✓  {json.dumps(result)}")
+        print(f"ID {req.id:>5} – stored ✓  {json.dumps(scores)}")
         success += 1
 
-    # ── 5. summary ──────────────────────────────────────────────────────
+    # ── summary ──────────────────────────────────────────────────────
     print("\n── run complete ──────────────────────────────────────────────")
     print(f"processed: {processed}")
     print(f"evaluated: {success}")
