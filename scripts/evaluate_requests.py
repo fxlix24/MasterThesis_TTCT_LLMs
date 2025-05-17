@@ -95,7 +95,7 @@ def main() -> None:
 
     print("━━━━━━━━ Evaluation run preview ━━━━━━━━")
     print(f"Model to be used: {judge_model}")
-    print("Dimension‑specific prompts:")
+    print("Dimension-specific prompts:")
     for d in DIMENSIONS:
         m = re.search(r"────────────────\s*SCORING RUBRIC\s*────────────────(.*?)(?:────────────────|$)",
                 EVAL_PROMPTS[d], re.S)
