@@ -1,6 +1,7 @@
 # Main script that initates the data collection for the currently selected AUT Experiment determined in the automation.env file with the parameter PROJECT_PHASE
 import sys, os
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 from promptengine.get_prompt import get_active_prompt        
 
@@ -44,19 +45,30 @@ VENDOR_CLIENT = {
     "deepseek": DeepSeekClient(),
 }
 
-VENDOR_STORE = AbstractLLMStore();
+VENDOR_STORE = {
+    "openai":    AbstractLLMStore(),
+    "gemini":    AbstractLLMStore(),
+    "anthropic": AbstractLLMStore(),
+    "deepseek": AbstractLLMStore(),
+}
 
 def call_model(vendor: str, prompt: str, model: str):
     runner = TestRunnerService(
         VENDOR_CLIENT[vendor],
-        VENDOR_STORE,
+        VENDOR_STORE[vendor],
     )    
 
     return runner.run_bench(prompt, model)
 
-# ----- 4. Main loop -------------------------------------
-for vendor, models in MODEL_MATRIX.items():
-    for model in models:
+def _run_for_vendor(vendor: str) -> None:
+    """Runs all models & repetitions for a single vendor."""
+    for model in MODEL_MATRIX[vendor]:
         for _ in range(int(RUNS_PER_MODEL)):
-            res_token = call_model(vendor, prompt, model)
-            print(f"[{vendor}/{model}] tokens={res_token}")
+            tokens = call_model(vendor, prompt, model)
+            print(f"[{vendor}/{model}] tokens={tokens}")
+
+# ----- 4. Main loop -------------------------------------
+with ThreadPoolExecutor(max_workers=len(MODEL_MATRIX)) as pool:
+    futures = [pool.submit(_run_for_vendor, v) for v in MODEL_MATRIX]
+    for f in as_completed(futures):          # re-raise any exceptions
+        f.result()
