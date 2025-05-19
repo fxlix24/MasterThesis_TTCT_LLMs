@@ -5,13 +5,15 @@ Requires:  pip install anthropic
 
 import os
 import anthropic
-from promptengine.core_store import LLMStore
+from dotenv import load_dotenv
+from promptengine.core_llm import AbstractLLM
 from promptengine.get_prompt import get_active_prompt
 
+load_dotenv("automation.env")
 
 client = anthropic.Anthropic()
 
-class AnthropicStore(LLMStore):
+class AnthropicClient(AbstractLLM):
     _env_model = os.getenv("ANTHROPIC_MODEL") #Used when script is run individually 
 
     def _call_llm(self, prompt, model: str | None = None):
@@ -28,4 +30,4 @@ class AnthropicStore(LLMStore):
         return model_name, text, resp.usage.output_tokens
 
 if __name__ == "__main__":
-    AnthropicStore().run(get_active_prompt())
+    print(AnthropicClient()._call_llm(get_active_prompt()))

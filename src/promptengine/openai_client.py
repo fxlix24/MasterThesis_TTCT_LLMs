@@ -5,12 +5,15 @@ Requires:  pip install openai>=1.3.0
 
 import os
 import openai
-from promptengine.core_store import LLMStore
+from dotenv import load_dotenv
+from promptengine.core_llm import AbstractLLM
 from promptengine.get_prompt import get_active_prompt
+
+load_dotenv("automation.env")
 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-class OpenAIStore(LLMStore):
+class OpenAIClient(AbstractLLM):
     _env_model = os.getenv("OPENAI_MODEL") #Used when script is run individually 
 
     def _call_llm(self, prompt: str, model: str | None = None):
@@ -25,6 +28,5 @@ class OpenAIStore(LLMStore):
         tokens_used = getattr(response.usage, "output_tokens", None)
         return model_name, text, tokens_used
 
-
 if __name__ == "__main__":
-    OpenAIStore().run(get_active_prompt())
+    print(OpenAIClient()._call_llm(get_active_prompt()))

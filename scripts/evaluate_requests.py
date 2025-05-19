@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, Session
 
 # ── project‑local imports ──────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,7 +22,7 @@ SRC  = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from promptengine.core_store import Session, Request, Evaluation      
+from database import engine, Request, Evaluation    
 from evaluation.llm_judge        import LLMJudge                     
 from evaluation.build_payload    import build_payload                 
 # ───────────────────────────────────────────────────────────────────────
@@ -218,7 +218,7 @@ def _storeResult(req, sess, existing, scores) -> bool:
 
 def main() -> None:
     # ── print evaluation review ──────────────────────────────────────
-    sess = Session()
+    sess = Session(engine)
     already = _printPreview(sess)
     override = _overrideEvaluation(already)
 

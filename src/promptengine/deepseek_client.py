@@ -5,13 +5,15 @@ Requires:  pip install openai
 
 import os
 from openai import OpenAI
-from promptengine.core_store import LLMStore
+from dotenv import load_dotenv
+from promptengine.core_llm import AbstractLLM
 from promptengine.get_prompt import get_active_prompt
 
+load_dotenv("automation.env")
 
 client = OpenAI(api_key=os.environ.get("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
 
-class DeepSeekStore(LLMStore):
+class DeepSeekClient(AbstractLLM):
     _env_model = os.getenv("DEEPSEEK_MODEL") #Used when script is run individually 
 
     def _call_llm(self, prompt: str, model: str | None = None):
@@ -29,4 +31,4 @@ class DeepSeekStore(LLMStore):
 
 
 if __name__ == "__main__":
-    DeepSeekStore().run(get_active_prompt())
+    print(DeepSeekClient()._call_llm(get_active_prompt()))

@@ -3,15 +3,17 @@ Gemini implementation of LLMStore.
 Requires:  pip install google-generativeai
 """
 
-import os, json
+import os
 import google.generativeai as genai
-from promptengine.core_store import LLMStore
+from dotenv import load_dotenv
+from promptengine.core_llm import AbstractLLM
 from promptengine.get_prompt import get_active_prompt
 
+load_dotenv("automation.env")
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-class GeminiStore(LLMStore):
+class GeminiClient(AbstractLLM):
     _env_model = os.getenv("GOOGLE_MODEL") #Used when script is run individually 
 
     def _call_llm(self, prompt: str, model: str | None = None):
@@ -27,4 +29,4 @@ class GeminiStore(LLMStore):
 
 
 if __name__ == "__main__":
-    GeminiStore().run(get_active_prompt())
+    print(GeminiClient()._call_llm(get_active_prompt()))
