@@ -16,9 +16,9 @@ load_dotenv(Path(__file__).with_name("automation.env"))   # credentials
 
 # ----- 1. Define which models to test ------------------
 MODEL_MATRIX: dict[str, list[str]] = {
-    # "openai":  ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "o3", "o1", "o4-mini"],
-    # "gemini":  ["gemini-2.0-flash", "gemini-2.5-flash-preview-04-17", "gemini-2.5-pro-preview-05-06", "gemini-1.5-pro"],
-    # "anthropic": ["claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219"],
+    "openai":  ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "o3", "o1", "o4-mini"],
+    "gemini":  ["gemini-2.0-flash", "gemini-2.5-flash-preview-04-17", "gemini-2.5-pro-preview-05-06", "gemini-1.5-pro"],
+    "anthropic": ["claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219"],
     "deepseek":  ["deepseek-chat", "deepseek-reasoner"],
 }
 RUNS_PER_MODEL = os.getenv("RUNS_PER_MODEL")
@@ -44,17 +44,12 @@ VENDOR_CLIENT = {
     "deepseek": DeepSeekClient(),
 }
 
-VENDOR_STORE = {
-    "openai":    AbstractLLMStore(),
-    "gemini":    AbstractLLMStore(),
-    "anthropic": AbstractLLMStore(),
-    "deepseek": AbstractLLMStore(),
-}
+VENDOR_STORE = AbstractLLMStore();
 
 def call_model(vendor: str, prompt: str, model: str):
     runner = TestRunnerService(
         VENDOR_CLIENT[vendor],
-        VENDOR_STORE[vendor],
+        VENDOR_STORE,
     )    
 
     return runner.run_bench(prompt, model)
