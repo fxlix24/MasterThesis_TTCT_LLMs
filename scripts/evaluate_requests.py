@@ -78,11 +78,9 @@ def _extract_score(dim: str, result) -> int:
     raise ValueError(
         f"Cannot extract '{dim}' score from judge response: {result!r}")
 
+# ── 3.  helper – print sctructure of evaluation process ——————————————
 
-# ── 3.  main routine ───────────────────────────────────────────────────
-
-def main() -> None:
-    sess = Session()
+def _printPreview(sess) -> int:
 
     total    = sess.query(Request).count()
     already  = sess.query(Evaluation).count()
@@ -113,7 +111,12 @@ def main() -> None:
         print("Aborted by user.")
         return
 
-    # ── ask once whether to overwrite existing evaluations ──────────
+    return to_score
+
+# ── 4.  helper – confirm to override database  ——————————————────
+
+def _overrideEvaluation(already: int) -> bool:
+# ── ask once whether to overwrite existing evaluations ──────────
     override = False
     if already:
         override = input(
@@ -121,11 +124,9 @@ def main() -> None:
         ).strip().lower() == "y"
         if override:
             print("Existing evaluations **will be updated**.\n")
+    return override
 
-    # ── init judge client ────────────────────────────────────────────
-    judge = LLMJudge(model=judge_model)
-
-    # ── iterate over requests ────────────────────────────────────────
+def _evaluateDatabase(sess, judge, override: bool):
     processed = success = failed = skipped = 0
 
     requests = (
@@ -157,7 +158,7 @@ def main() -> None:
             instructions = EVAL_PROMPTS[dim]
             result       = judge.evaluate(instructions, payload)
             try:
-                scores[dim] = _extract_score(dim, result)
+                scores[dim] = _extract_score(dim, result) 
             except ValueError as err:
                 print(f"ID {req.id:>5} – {dim} evaluation failed: {err}")
                 sess.rollback()
@@ -168,29 +169,64 @@ def main() -> None:
             # at least one dimension failed – skip storing anything
             continue
 
-        # ---- store (insert or update) only when *all four* present --
-        now_utc = datetime.now(timezone.utc)
-        if existing:
-            existing.originality = scores["originality"]
-            existing.fluency     = scores["fluency"]
-            existing.flexibility = scores["flexibility"]
-            existing.elaboration = scores["elaboration"]
-            existing.timestamp   = now_utc
-        else:
-            sess.add(
-                Evaluation(
-                    request_id  = req.id,
-                    originality = scores["originality"],
-                    fluency     = scores["fluency"],
-                    flexibility = scores["flexibility"],
-                    elaboration = scores["elaboration"],
-                    timestamp   = now_utc,
-                )
-            )
+        if _storeResult(req, sess, existing, scores):
+            success += 1
+            
+    return processed, success, failed, skipped
 
+# ── 5.  helper – store results in database  ——————————————────
+
+def _storeResult(req, sess, existing, scores) -> bool:
+
+    now_utc = datetime.now(timezone.utc)
+
+    # Enforce that all four keys are present:
+    required = {"originality","fluency","flexibility","elaboration"}
+    if not required.issubset(scores):
+            print(f"ID {req.id:>5} – missing scores, skipping store")
+            return False
+
+    if existing:
+        existing.originality = scores["originality"]
+        existing.fluency     = scores["fluency"]
+        existing.flexibility = scores["flexibility"]
+        existing.elaboration = scores["elaboration"]
+        existing.timestamp   = now_utc
+    else:
+        sess.add(
+            Evaluation(
+                request_id  = req.id,
+                originality = scores["originality"],
+                fluency     = scores["fluency"],
+                flexibility = scores["flexibility"],
+                elaboration = scores["elaboration"],
+                timestamp   = now_utc,
+            )
+        )
+
+    try:
         sess.commit()
-        print(f"ID {req.id:>5} – stored ✓  {json.dumps(scores)}")
-        success += 1
+    except Exception as e:
+        sess.rollback()
+        print(f"ID {req.id:>5} – store failed: {e}")
+        return False
+
+    print(f"ID {req.id:>5} – stored ✓  {json.dumps(scores)}")
+    return True
+
+# ── 6.  main routine ───────────────────────────────────────────────────
+
+def main() -> None:
+    # ── print evaluation review ──────────────────────────────────────
+    sess = Session()
+    already = _printPreview(sess)
+    override = _overrideEvaluation(already)
+
+    # ── init judge client ────────────────────────────────────────────
+    judge = LLMJudge(model=judge_model)
+
+    # ── iterate over requests ────────────────────────────────────────
+    processed, success, failed, skipped = _evaluateDatabase(sess, judge, override)
 
     # ── summary ──────────────────────────────────────────────────────
     print("\n── run complete ──────────────────────────────────────────────")
