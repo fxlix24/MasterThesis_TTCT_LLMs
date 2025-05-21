@@ -13,31 +13,14 @@ from __future__ import annotations
 from typing import Dict
 import re
 
-# ── helper -------------------------------------------------------------
-def _clean_response(text: str):
-    """
-    Return (use, detail) or None if the line is meta / empty.
-    Splits at the first [- – — :] to separate the core idea from its elaboration.
-    """
-    txt = text.strip()
-    if not txt:
-        return None
-
-    head, *tail = re.split(r"\s*[-–—:]\s*", txt, maxsplit=1)
-    use = head.rstrip(". ").strip()
-    detail = tail[0].rstrip(". ").strip() if tail else ""
-    return (use, detail)
-
 # ── build input payload -----------------------------------------------
 def build_payload(req) -> Dict[str, object]:
     ideas = []
     seen = set()
 
     for r in req.responses:
-        parsed = _clean_response(r.bullet_text)
-        if not parsed:
-            continue
-        use, detail = parsed
+        use = r.bullet_point
+        detail = r.bullet_details
         key = use.lower()
         if key in seen:
             continue                     # skip duplicate uses
