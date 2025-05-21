@@ -11,7 +11,6 @@ Usage
 
 from __future__ import annotations
 from typing import Dict
-import re
 
 # ── build input payload -----------------------------------------------
 def build_payload(req) -> Dict[str, object]:
