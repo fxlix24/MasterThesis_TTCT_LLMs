@@ -57,6 +57,8 @@ class Response(Base):
     request_id    = Column(Integer, ForeignKey("requests.id"), nullable=False)
     bullet_number = Column(Integer, nullable=False)
     bullet_text   = Column(Text, nullable=False)
+    bullet_point  = Column(Text, nullable=False)
+    bullet_details   = Column(Text, nullable=True)
     timestamp     = Column(DateTime, default=datetime.now(timezone.utc))
 
 class Evaluation(Base):
