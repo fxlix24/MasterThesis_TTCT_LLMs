@@ -66,7 +66,7 @@ def plateau(sub: pd.DataFrame, window: int = 1) -> Tuple[int|None, int]:
         fresh = any(idea not in seen for idea in ideas)
         seen.update(ideas)
         stagn = 0 if fresh else stagn + 1
-        if stagn+1 >= window:           # plateau reached
+        if stagn >= window:           # plateau reached
             return rid, len(seen)
     return None, len(seen)              # never saturated
 
