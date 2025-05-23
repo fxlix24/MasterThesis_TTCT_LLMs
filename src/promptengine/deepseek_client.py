@@ -22,7 +22,7 @@ class DeepSeekClient(AbstractLLM):
         response = client.chat.completions.create(
             model=model_name,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant"},
+                {"role": "system", "content": "You are a creative assistant."},
                 {"role": "user", "content": prompt}],
         )
         text = response.choices[0].message.content

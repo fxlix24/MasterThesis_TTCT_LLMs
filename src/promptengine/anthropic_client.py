@@ -22,7 +22,7 @@ class AnthropicClient(AbstractLLM):
         resp = client.messages.create(
             model=model_name,
             max_tokens=1000,
-            system="You are a helpful assistant.",
+            system="You are a creative assistant.",
             messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
         )
         # resp.content is a list[TextBlock]; join the text blocks

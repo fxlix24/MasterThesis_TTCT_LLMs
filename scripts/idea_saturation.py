@@ -61,7 +61,7 @@ def plateau(sub: pd.DataFrame, window: int = 1) -> Tuple[int|None, int]:
     plateau_request_id is the *first* request after which `window`
     consecutive requests added **zero** new canonical ideas.
     """
-    seen, stagn = set(), 0, None
+    seen, stagn = set(), 0
     for rid, ideas in sub.groupby("request_id")["canon"]:
         fresh = any(idea not in seen for idea in ideas)
         seen.update(ideas)
