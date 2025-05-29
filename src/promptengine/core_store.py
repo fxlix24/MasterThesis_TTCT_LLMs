@@ -1,5 +1,5 @@
 # core_store.py
-import os, re
+import os, re, json
 from sqlalchemy.orm import Session
 from database import Request, Response, engine
 from typing import Optional, Tuple
@@ -21,14 +21,16 @@ class AbstractLLMStore:
         self.session.flush()
 
         # 2) Split and Store Responses
-        for num, idea in extract_bullets(full_text):
-            point, detail = _clean_response(idea)
+        for num, point, detail in _iter_responses(full_text):
+            # Store the raw bullet text mainly for completeness / debugging:
+            bullet_text = point if not detail else f"{point} – {detail}"
+
             self.session.add(Response(
-                request_id=req.id,
-                bullet_number=num,
-                bullet_text=idea,
-                bullet_point=point,
-                bullet_details=detail,
+                request_id   = req.id,
+                bullet_number= num,
+                bullet_text  = bullet_text,
+                bullet_point = point,
+                bullet_details = detail,
             ))
 
         self.session.commit()
@@ -95,3 +97,25 @@ def _clean_response(text: str) -> Optional[Tuple[str, str]]:
 
     # final tidy-up
     return (head.strip(), tail.strip())
+
+
+def _iter_responses(raw: str):
+    """
+    Yields (n, idea, explanation) tuples from either a JSON list or plaintext bullets.
+    """
+    # ── 1) try JSON first ───────────────────────────────────────────
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        data = None
+
+    if isinstance(data, list) and all(isinstance(d, dict) and "idea" in d for d in data):
+        for n, item in enumerate(data, 1):
+            yield n, item["idea"].strip(), (item.get("explanation") or "").strip()
+        return                              # done – don’t fall through
+
+    # ── 2) fall back to the old plaintext logic ─────────────────────
+    for n, bullet in extract_bullets(raw):
+        idea, detail = _clean_response(bullet)
+        yield n, idea, detail
+
