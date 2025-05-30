@@ -1,4 +1,5 @@
 # install.packages(c("DBI", "RMariaDB"))  # or "RMySQL" on old setups
+library(tidyverse)
 library(DBI)
 
 con <- dbConnect(
@@ -14,27 +15,28 @@ con <- dbConnect(
 dbListTables(con)
 
 sql <-
-"SELECT
+  "SELECT
     r.id AS request_id,
     r.prompt,
     r.experiment_phase,
     r.model,
     r.timestamp AS request_timestamp,
-	r.total_tokens,
+    r.total_tokens,
     res.id AS response_id,
     res.bullet_number,
     res.bullet_text,
-    res.timestamp AS response_timestamp
+    res.bullet_point,
+    res.bullet_details
 FROM requests r
 JOIN responses res ON r.id = res.request_id"
 
 df <- dbGetQuery(con, sql)
 
-view(df)
+View(df)
 
 
-df_summary <- df %>%                       # keep only the numbers you need
-  group_by(model) %>%                      # one row per model
+df_summary <- df |>
+  group_by(model) |>
   summarise(avg_tokens = mean(total_tokens, na.rm = TRUE))
 
 ggplot(df_summary, aes(model, avg_tokens, fill = model)) +
@@ -51,6 +53,6 @@ ggplot(df_summary, aes(model, avg_tokens, fill = model)) +
       vjust = 0.5,       # vertically centre the text
       hjust = 1          # right-align so labels sit snug under the ticks
     )
-)
+  )
 dbClearResult(res)
 dbDisconnect(con)
