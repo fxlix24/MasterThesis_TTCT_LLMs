@@ -53,7 +53,7 @@ MYSQL_DSN = {
 }
 EMBED_MODEL: str = "text-embedding-3-small"
 BATCH_EMBED: int = 500          # keep < 8 191 tokens
-SIM_THRESHOLD: float = 0.80
+SIM_THRESHOLD: float = 0.90
 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -69,7 +69,7 @@ def chunks(it: Iterable, n: int):
 # ───────────────────────── EMBED MISSING ROWS ─────────────────────────
 
 def embed_missing(cur: mysql.cursor.MySQLCursor) -> None:
-    cur.execute("SELECT id, bullet_text FROM ideas_raw WHERE embedding IS NULL;")
+    cur.execute("SELECT id, bullet_text FROM ideas_raw WHERE embedding IS NOT NULL;")
     rows = cur.fetchall()
     if not rows:
         print("No missing embeddings.")

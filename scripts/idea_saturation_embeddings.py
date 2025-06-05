@@ -1,15 +1,15 @@
-# idea_saturation_embeddings.py — OpenAI‑python ≥ 1.0 compatible ────────────────
+# idea_saturation_embeddings.py — OpenAI-python ≥ 1.0 compatible ────────────────
 """
 Detect the request at which a *creative plateau* is reached – i.e. when
 no *novel* ideas are produced for a configurable number of consecutive
 requests – using OpenAI’s **`text-embedding-3-small`** model *via the new
-`openai‑python ≥ 1.0` SDK*.
+`openai-python ≥ 1.0` SDK*.
 
-Quick‑start
+Quick-start
 ───────────
 ```bash
 pip install --upgrade "openai>=1.0.0" tqdm numpy pandas scikit-learn sqlalchemy
-export OPENAI_API_KEY="sk‑…"   # or set OPENAI_ORG / OPENAI_BASE_URL as needed
+export OPENAI_API_KEY="sk-…"   # or set OPENAI_ORG / OPENAI_BASE_URL as needed
 python idea_saturation_embeddings.py
 ```
 
@@ -18,7 +18,7 @@ Main changes vs. the legacy SDK version
 * Import is now `from openai import OpenAI`; you instantiate a **client**.
 * Endpoint is `client.embeddings.create()` and returns objects instead of
   dicts.
-* Everything else – batching, cosine‑similarity freshness test, plateau
+* Everything else – batching, cosine-similarity freshness test, plateau
   detection – is unchanged.
 """
 from __future__ import annotations
@@ -51,7 +51,7 @@ except ImportError as e:
 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-EMBED_MODEL: str = "text-embedding-3-small"  # 1536‑d vectors
+EMBED_MODEL: str = "text-embedding-3-small"  # 1536-d vectors
 BATCH_SIZE: int = 100                         # safe for ≈8000 tokens
 SIM_THRESHOLD: float = 0.6                   # cosine similarity cutoff
 WINDOW: int = 1                               # # stagnating requests → plateau
@@ -59,7 +59,7 @@ WINDOW: int = 1                               # # stagnating requests → platea
 # ------------------------------------------------------------------ #
 # 1 ▸ Load conversation data                                          #
 # ------------------------------------------------------------------ #
-from database import engine, Request, Response  # project‑local module
+from database import engine, Request, Response  # project-local module
 
 with Session(engine) as s:
     rows = s.execute(
@@ -75,7 +75,7 @@ df = pd.DataFrame(rows)
 idea_texts: List[str] = df["idea"].tolist()
 
 # ------------------------------------------------------------------ #
-# 2 ▸ Fetch embeddings in mini‑batches                                #
+# 2 ▸ Fetch embeddings in mini-batches                                #
 # ------------------------------------------------------------------ #
 print(f"Requesting {len(idea_texts):,} embeddings from OpenAI …")
 embeddings: List[np.ndarray] = []
@@ -90,7 +90,7 @@ assert len(embeddings) == len(idea_texts)
 df["embedding"] = embeddings
 
 # ------------------------------------------------------------------ #
-# 3 ▸ Plateau‑detection routine                                       #
+# 3 ▸ Plateau-detection routine                                       #
 # ------------------------------------------------------------------ #
 
 def plateau(sub: pd.DataFrame, window: int, sim_thr: float) -> Tuple[int | None, int]:
