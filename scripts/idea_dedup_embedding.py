@@ -20,7 +20,7 @@ import numpy as np
 import pymysql
 from tqdm import tqdm
 from openai import OpenAI
-from sklearn.cluster import KMeans, DBSCAN
+from idea_dedup_clustering import kmeans_labels, hybrid_labels, dbscan_labels
 from dotenv import load_dotenv
 
 # ─────────────────────────── DB CONFIG ────────────────────────────
@@ -73,33 +73,6 @@ def embed_texts(texts: List[str], batch: int) -> List[List[float]]:
         time.sleep(SLEEP_BETWEEN)
     return out
 
-# ────────────────────────── CLUSTERING ────────────────────────────
-def kmeans_cluster(vectors: np.ndarray, k: int | None) -> List[int]:
-    k = k or max(2, int(math.sqrt(len(vectors)/2)))
-    km = KMeans(n_clusters=k, n_init="auto", random_state=42)
-    return km.fit_predict(vectors).tolist()
-
-def dbscan_cluster(vectors: np.ndarray, eps: float, min_samples: int) -> List[int]:
-    model = DBSCAN(eps=eps, metric="cosine",
-                   min_samples=min_samples, n_jobs=-1)
-    return model.fit_predict(vectors).tolist()
-
-def hybrid_cluster(vectors: np.ndarray, coarse_k: int, eps: float) -> List[int]:
-    """K-Means bucket → DBSCAN inside each bucket"""
-    coarse = kmeans_cluster(vectors, coarse_k)
-    fine   = np.full(len(vectors), -1, dtype=int)
-    next_id = 0
-    for c in np.unique(coarse):
-        idx = np.where(np.array(coarse) == c)[0]
-        if len(idx) < 2:  # nothing to cluster
-            continue
-        sub_labels = dbscan_cluster(vectors[idx], eps, 2)
-        offset = max(sub_labels) + 1 if max(sub_labels) >= 0 else 0
-        for i, lab in zip(idx, sub_labels):
-            fine[i] = lab + next_id if lab >= 0 else -1
-        next_id += offset
-    return fine.tolist()
-
 # ──────────────────────── WRITE-BACK ──────────────────────────────
 def write_back(conn, ids: Sequence[int],
                embeds: Sequence[List[float]], labels: Sequence[int]):
@@ -143,12 +116,12 @@ def main(argv: List[str] | None = None):
 
         print(f"Clustering with {args.algo.upper()} …")
         if args.algo == "kmeans":
-            labels = kmeans_cluster(X, args.k)
+            labels = kmeans_labels(X, args.k)
         elif args.algo == "dbscan":
-            labels = dbscan_cluster(X, args.eps, args.min_samples)
+            labels = dbscan_labels(X, args.eps, args.min_samples)
         else:  # hybrid
             coarse_k = args.k or int(math.sqrt(len(X)))
-            labels = hybrid_cluster(X, coarse_k, args.eps)
+            labels = hybrid_labels(X, coarse_k, args.eps)
 
         write_back(conn, ids, embeds, labels)
         print("✔︎ Done.")
