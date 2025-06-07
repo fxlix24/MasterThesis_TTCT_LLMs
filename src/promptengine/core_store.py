@@ -98,6 +98,9 @@ def _clean_response(text: str) -> Optional[Tuple[str, str]]:
     # final tidy-up
     return (head.strip(), tail.strip())
 
+# --------------------------------------------------------------------- #
+# 3. helper: extract idea and explanatory details from JSON             #
+# --------------------------------------------------------------------- #
 
 def _iter_responses(raw: str):
     """

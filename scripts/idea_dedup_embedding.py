@@ -12,8 +12,9 @@ Dependencies
 pip install openai pymysql scikit-learn numpy tqdm
 """
 
+
 from __future__ import annotations
-import argparse, json, math, os, time
+import argparse, json, math, os, time, sys
 from typing import List, Sequence
 
 import numpy as np
@@ -22,6 +23,12 @@ from tqdm import tqdm
 from openai import OpenAI
 from idea_dedup_clustering import kmeans_labels, hybrid_labels, dbscan_labels
 from dotenv import load_dotenv
+
+project_root = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from support_tools.ideas_sync import sync_ideas
 
 # ─────────────────────────── DB CONFIG ────────────────────────────
 
@@ -103,6 +110,7 @@ def main(argv: List[str] | None = None):
 
     conn = pymysql.connect(**MYSQL_DSN)
     try:
+        sync_ideas()
         rows = fetch_rows(conn, args.only_new)
         if not rows:
             print("Nothing to process.")

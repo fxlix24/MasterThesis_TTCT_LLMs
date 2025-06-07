@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import os, sys
+from typing import List
+
+import pymysql
+from dotenv import load_dotenv
+
+# ───────────────────────── DB SET-UP ──────────────────────────────
+load_dotenv("automation.env")
+
+MYSQL_DSN = {
+    "host":     os.getenv("MYSQL_HOST", "localhost"),
+    "port":     int(os.getenv("MYSQL_PORT", 3306)),
+    "user":     os.getenv("MYSQL_USER", "root"),
+    "password": os.getenv("MYSQL_PASSWORD", ""),
+    "database": os.getenv("MYSQL_DB", "aut_experiment"),
+    "charset":  "utf8mb4",
+    "cursorclass": pymysql.cursors.DictCursor,
+}
+
+REQ_TABLE      = "requests"
+RESP_TABLE     = "responses"
+IDEAS_TABLE    = "ideas_raw"
+
+
+# ─────────────────────── CORE FUNCTIONS ───────────────────────────
+def fetch_missing_request_ids(conn) -> List[int]:
+    """Return request IDs present in `requests` but absent from `ideas_raw`."""
+    sql = (
+        f"SELECT r.id                          AS request_id "
+        f"FROM   {REQ_TABLE} r "
+        f"LEFT  JOIN {IDEAS_TABLE} i "
+        f"       ON i.request_id = r.id "
+        f"WHERE  i.request_id IS NULL"
+    )
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        return [row["request_id"] for row in cur.fetchall()]
+
+
+def fetch_rows_for_requests(conn, missing_ids: List[int]):
+    """Pull *(request_id, model, bullet_number, bullet_point)* for the IDs."""
+    if not missing_ids:
+        return []
+
+    fmt_ids = ",".join(["%s"] * len(missing_ids))
+    sql = (
+        f"SELECT r.id              AS request_id, "
+        f"       r.model           AS model, "
+        f"       s.bullet_number   AS bullet_number, "
+        f"       s.bullet_point    AS bullet_point "
+        f"FROM   {REQ_TABLE}  r "
+        f"JOIN   {RESP_TABLE} s ON s.request_id = r.id "
+        f"WHERE  r.id IN ({fmt_ids})"
+    )
+    with conn.cursor() as cur:
+        cur.execute(sql, missing_ids)
+        return cur.fetchall()
+
+
+def insert_into_ideas_raw(conn, rows) -> int:
+    sql = (
+        f"INSERT INTO {IDEAS_TABLE} "
+        f"(request_id, model, bullet_number, bullet_point) "
+        f"VALUES (%s, %s, %s, %s)"
+    )
+    data = [
+        (row["request_id"], row["model"], row["bullet_number"], row["bullet_point"])
+        for row in rows
+    ]
+    with conn.cursor() as cur:
+        cur.executemany(sql, data)
+    conn.commit()
+    return len(data)
+
+def sync_ideas():
+    try:
+        conn = pymysql.connect(**MYSQL_DSN)
+    except pymysql.MySQLError as e:
+        print(f"[sync_ideas_raw] Could not connect to MySQL: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        missing_ids = fetch_missing_request_ids(conn)
+        if not missing_ids:
+            print("[sync_ideas_raw] ✔︎ ideas_raw is already up-to-date.")
+            return
+
+        rows = fetch_rows_for_requests(conn, missing_ids)
+        inserted = insert_into_ideas_raw(conn, rows)
+
+       
+        print(f"[sync_ideas_raw] ✔︎ Inserted {inserted} rows " f"for {len(missing_ids)} new requests.")
+    finally:
+        conn.close()
+
+# ─────────────────────────── MAIN ─────────────────────────────────
+if __name__ == "__main__":
+    sync_ideas()
