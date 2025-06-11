@@ -26,12 +26,12 @@ IDEAS_TABLE    = "ideas_raw"
 
 # ─────────────────────── CORE FUNCTIONS ───────────────────────────
 def fetch_missing_request_ids(conn) -> List[int]:
-    """Return request IDs present in `requests` but absent from `ideas_raw`."""
+    """Return request IDs that have responses but are absent from `ideas_raw`."""
     sql = (
-        f"SELECT r.id                          AS request_id "
+        f"SELECT DISTINCT r.id AS request_id "
         f"FROM   {REQ_TABLE} r "
-        f"LEFT  JOIN {IDEAS_TABLE} i "
-        f"       ON i.request_id = r.id "
+        f"JOIN   {RESP_TABLE} resp ON resp.request_id = r.id "
+        f"LEFT JOIN {IDEAS_TABLE} i ON i.request_id = r.id "
         f"WHERE  i.request_id IS NULL"
     )
     with conn.cursor() as cur:
@@ -46,12 +46,12 @@ def fetch_rows_for_requests(conn, missing_ids: List[int]):
 
     fmt_ids = ",".join(["%s"] * len(missing_ids))
     sql = (
-        f"SELECT r.id              AS request_id, "
-        f"       r.model           AS model, "
-        f"       s.bullet_number   AS bullet_number, "
-        f"       s.bullet_point    AS bullet_point "
-        f"FROM   {REQ_TABLE}  r "
-        f"JOIN   {RESP_TABLE} s ON s.request_id = r.id "
+        f"SELECT r.id            AS request_id, "
+        f"       r.model         AS model, "
+        f"       s.bullet_number AS bullet_number, "
+        f"       s.bullet_point  AS bullet_point "
+        f"FROM   {RESP_TABLE} s "
+        f"JOIN   {REQ_TABLE}  r ON r.id = s.request_id "
         f"WHERE  r.id IN ({fmt_ids})"
     )
     with conn.cursor() as cur:
@@ -82,16 +82,30 @@ def sync_ideas():
         sys.exit(1)
 
     try:
+        # Check for requests that have no responses at all
+        with conn.cursor() as cur:
+            cur.execute(f"""
+                SELECT COUNT(*) as count 
+                FROM {REQ_TABLE} r 
+                LEFT JOIN {RESP_TABLE} resp ON resp.request_id = r.id 
+                WHERE resp.request_id IS NULL
+            """)
+            empty_requests = cur.fetchone()['count']
+            if empty_requests > 0:
+                print(f"[INFO] Found {empty_requests} requests with no response data (will be skipped)")
+
         missing_ids = fetch_missing_request_ids(conn)
         if not missing_ids:
             print("[sync_ideas_raw] ✔︎ ideas_raw is already up-to-date.")
             return
 
+        print(f"[DEBUG] Request IDs with responses but missing from ideas_raw: {missing_ids[:5]}...")
+        
         rows = fetch_rows_for_requests(conn, missing_ids)
+        print(f"[DEBUG] Found {len(rows)} rows to insert")
+        
         inserted = insert_into_ideas_raw(conn, rows)
-
-       
-        print(f"[sync_ideas_raw] ✔︎ Inserted {inserted} rows " f"for {len(missing_ids)} new requests.")
+        print(f"[sync_ideas_raw] ✔︎ Inserted {inserted} rows for {len(missing_ids)} requests with responses.")
     finally:
         conn.close()
 

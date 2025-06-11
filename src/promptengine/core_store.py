@@ -106,19 +106,26 @@ def _iter_responses(raw: str):
     """
     Yields (n, idea, explanation) tuples from either a JSON list or plaintext bullets.
     """
-    # ── 1) try JSON first ───────────────────────────────────────────
+    # ── 1) try JSON first (handle markdown code blocks) ──────────────
+    json_text = raw.strip()
+    
+    # Remove markdown code block wrapper if present
+    if json_text.startswith('```json\n') and json_text.endswith('\n```'):
+        json_text = json_text[8:-4]  # Remove ```json\n from start and \n``` from end
+    elif json_text.startswith('```\n') and json_text.endswith('\n```'):
+        json_text = json_text[4:-4]  # Remove ```\n from start and \n``` from end
+    
     try:
-        data = json.loads(raw)
+        data = json.loads(json_text)
     except json.JSONDecodeError:
         data = None
 
     if isinstance(data, list) and all(isinstance(d, dict) and "idea" in d for d in data):
         for n, item in enumerate(data, 1):
             yield n, item["idea"].strip(), (item.get("explanation") or "").strip()
-        return                              # done – don’t fall through
-
-    # ── 2) fall back to the old plaintext logic ─────────────────────
-    for n, bullet in extract_bullets(raw):
-        idea, detail = _clean_response(bullet)
-        yield n, idea, detail
-
+    else:
+        # ── 2) fall back to the old plaintext logic ─────────────────────
+        for n, bullet in extract_bullets(raw):
+            idea, detail = _clean_response(bullet)
+            if idea:  # Only yield if we have a valid idea
+                yield n, idea, detail
