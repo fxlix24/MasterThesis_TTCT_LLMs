@@ -61,10 +61,10 @@ def batched(seq: Sequence, size: int):
     for i in range(0, len(seq), size):
         yield seq[i:i + size]
 
-def fetch_rows(conn, only_new: bool) -> List[dict]:
+def fetch_rows(conn, redo_all: bool) -> List[dict]:
     q  = f"SELECT {ID_FIELD}, {TEXT_FIELD}, {EMBED_FIELD} FROM {TABLE}"
     q += f" WHERE {TEXT_FIELD} IS NOT NULL"
-    if only_new:
+    if not redo_all:
         q += f" AND {EMBED_FIELD} IS NULL"
     with conn.cursor() as cur:
         cur.execute(q)
@@ -104,14 +104,14 @@ def main(argv: List[str] | None = None):
                     help="DBSCAN min_samples")
     ap.add_argument("--batch", type=int, default=DEFAULT_BATCH,
                     help="Embedding batch size")
-    ap.add_argument("--only-new", action="store_true",
-                    help="Skip rows that already have an embedding")
+    ap.add_argument("--redo-all", action="store_true",
+                    help="Redo embeddings for entire dataset (default: only process new rows)")
     args = ap.parse_args(argv)
 
     conn = pymysql.connect(**MYSQL_DSN)
     try:
         sync_ideas()
-        rows = fetch_rows(conn, args.only_new)
+        rows = fetch_rows(conn, args.redo_all)
         if not rows:
             print("Nothing to process.")
             return
