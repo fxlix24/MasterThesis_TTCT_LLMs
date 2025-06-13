@@ -19,9 +19,10 @@ MYSQL_DSN = {
     "cursorclass": pymysql.cursors.DictCursor,
 }
 
+EXPERIMENT_PHASE = 1 # Alternatively use 'os.getenv("PROJECT_PHASE")' --> returns Integer of currently selected PROJECT_PHASE
 REQ_TABLE      = "requests"
 RESP_TABLE     = "responses"
-IDEAS_TABLE    = "ideas_raw"
+IDEAS_TABLE    = f"ideas_aut_{EXPERIMENT_PHASE}"
 
 
 # ─────────────────────── CORE FUNCTIONS ───────────────────────────
@@ -32,7 +33,7 @@ def fetch_missing_request_ids(conn) -> List[int]:
         f"FROM   {REQ_TABLE} r "
         f"JOIN   {RESP_TABLE} resp ON resp.request_id = r.id "
         f"LEFT JOIN {IDEAS_TABLE} i ON i.request_id = r.id "
-        f"WHERE  i.request_id IS NULL"
+        f"WHERE  i.request_id IS NULL AND r.experiment_phase = {EXPERIMENT_PHASE}"
     )
     with conn.cursor() as cur:
         cur.execute(sql)

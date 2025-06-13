@@ -5,7 +5,7 @@ from database import Request, Response, engine
 from typing import Optional, Tuple
 
 class AbstractLLMStore:
-    def __init__(self, phase: str = os.getenv("PROJECT_PHASE")):
+    def __init__(self, phase: int = os.getenv("PROJECT_PHASE")):
         self.phase   = phase
         self.session = Session(engine)
 

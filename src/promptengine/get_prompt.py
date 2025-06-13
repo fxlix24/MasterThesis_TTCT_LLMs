@@ -12,7 +12,7 @@ def get_active_prompt() -> str:
     Return the prompt that corresponds to the current PROJECT_PHASE.
     Raises KeyError if the mapping is missing.
     """
-    phase = os.getenv("PROJECT_PHASE", "").strip().upper()  # e.g. 'AUT_1'
+    phase = "AUT_" + os.getenv("PROJECT_PHASE")
     if not phase:
         raise KeyError("PROJECT_PHASE is not set")
 

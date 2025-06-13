@@ -43,7 +43,7 @@ class Request(Base):
     prompt          = Column(Text, nullable=False)
     timestamp       = Column(DateTime, default=datetime.now(timezone.utc))
     model           = Column(String(255), nullable=False)
-    experiment_phase= Column(String(255), default="n/a")
+    experiment_phase= Column(Integer, default=0)
     total_tokens    = Column(Integer)
 
     responses  = relationship("Response",  backref="request",
