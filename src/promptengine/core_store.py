@@ -120,12 +120,30 @@ def _iter_responses(raw: str):
     except json.JSONDecodeError:
         data = None
 
-    if isinstance(data, list) and all(isinstance(d, dict) and "idea" in d for d in data):
-        for n, item in enumerate(data, 1):
-            yield n, item["idea"].strip(), (item.get("explanation") or "").strip()
-    else:
-        # ── 2) fall back to the old plaintext logic ─────────────────────
-        for n, bullet in extract_bullets(raw):
-            idea, detail = _clean_response(bullet)
-            if idea:  # Only yield if we have a valid idea
-                yield n, idea, detail
+    # Handle both direct arrays and nested objects
+    if data is not None:
+        ideas_list = None
+        
+        # Case 1: Direct array of objects with "idea" key
+        if isinstance(data, list) and all(isinstance(d, dict) and "idea" in d for d in data):
+            ideas_list = data
+        
+        # Case 2: Object with a key containing an array of idea objects
+        elif isinstance(data, dict):
+            # Look for any key that contains a list of idea objects
+            for key, value in data.items():
+                if isinstance(value, list) and all(isinstance(d, dict) and "idea" in d for d in value):
+                    ideas_list = value
+                    break
+        
+        # If we found a valid ideas list, process it
+        if ideas_list:
+            for n, item in enumerate(ideas_list, 1):
+                yield n, item["idea"].strip(), (item.get("explanation") or "").strip()
+            return
+
+    # ── 2) fall back to the old plaintext logic ─────────────────────
+    for n, bullet in extract_bullets(raw):
+        idea, detail = _clean_response(bullet)
+        if idea:  # Only yield if we have a valid idea
+            yield n, idea, detail
