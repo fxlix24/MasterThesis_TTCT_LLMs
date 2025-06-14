@@ -114,11 +114,23 @@ def _iter_responses(raw: str):
         json_text = json_text[8:-4]  # Remove ```json\n from start and \n``` from end
     elif json_text.startswith('```\n') and json_text.endswith('\n```'):
         json_text = json_text[4:-4]  # Remove ```\n from start and \n``` from end
+    elif json_text.startswith('```') and json_text.endswith('```'):
+        json_text = json_text[3:-3].strip()  # Remove ``` from both ends
     
     try:
         data = json.loads(json_text)
     except json.JSONDecodeError:
-        data = None
+        # Try to salvage partial JSON by attempting to fix common truncation issues
+        try:
+            # If it looks like JSON but is truncated, try to close it
+            if json_text.strip().startswith('[') and not json_text.strip().endswith(']'):
+                # Try to close the array - this is a simple heuristic
+                salvage_attempt = json_text.rstrip().rstrip(',') + ']'
+                data = json.loads(salvage_attempt)
+            else:
+                data = None
+        except (json.JSONDecodeError, Exception):
+            data = None
 
     # Handle both direct arrays and nested objects
     if data is not None:
@@ -139,7 +151,9 @@ def _iter_responses(raw: str):
         # If we found a valid ideas list, process it
         if ideas_list:
             for n, item in enumerate(ideas_list, 1):
-                yield n, item["idea"].strip(), (item.get("explanation") or "").strip()
+                idea = item["idea"].strip()
+                explanation = (item.get("explanation") or "").strip()
+                yield n, idea, explanation
             return
 
     # ── 2) fall back to the old plaintext logic ─────────────────────
