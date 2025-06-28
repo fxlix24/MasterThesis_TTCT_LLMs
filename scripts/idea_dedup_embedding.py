@@ -44,7 +44,7 @@ MYSQL_DSN = {
     "cursorclass": pymysql.cursors.DictCursor,
 }
 
-EXPERIMENT_PHASE = 1 # # Alternatively use 'os.getenv("PROJECT_PHASE")' --> returns Integer of currently selected PROJECT_PHASE
+EXPERIMENT_PHASE = 1 # Alternatively use 'os.getenv("PROJECT_PHASE")' --> returns Integer of currently selected PROJECT_PHASE
 TABLE          = f"ideas_aut_{EXPERIMENT_PHASE}" 
 ID_FIELD       = "id"
 TEXT_FIELD     = "bullet_point"
