@@ -44,7 +44,7 @@ MYSQL_DSN = {
     "cursorclass": pymysql.cursors.DictCursor,
 }
 
-EXPERIMENT_PHASE = 1 # Alternatively use 'os.getenv("PROJECT_PHASE")' --> returns Integer of currently selected PROJECT_PHASE
+EXPERIMENT_PHASE = os.getenv("PROJECT_PHASE") # Alternatively use 'os.getenv("PROJECT_PHASE")' --> returns Integer of currently selected PROJECT_PHASE
 TABLE          = f"ideas_aut_{EXPERIMENT_PHASE}" 
 ID_FIELD       = "id"
 TEXT_FIELD     = "bullet_point"
@@ -57,7 +57,7 @@ EMBED_MODEL   = "text-embedding-3-small"
 DEFAULT_BATCH = 64
 SLEEP_BETWEEN = 0.0                   
 
-# ────────────────────────── UTILITIES ─────────────────────────────
+# ────────────────────────── UTILITIES ─────────────────────────────algo
 def batched(seq: Sequence, size: int):
     for i in range(0, len(seq), size):
         yield seq[i:i + size]

@@ -21,7 +21,7 @@ class AnthropicClient(AbstractLLM):
 
         resp = client.messages.create(
             model=model_name,
-            max_tokens=10000,
+            max_tokens=8092,
             system="You are a creative assistant.",
             messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
         )

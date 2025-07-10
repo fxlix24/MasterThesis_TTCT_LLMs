@@ -17,10 +17,10 @@ load_dotenv(Path(__file__).with_name("automation.env"))   # credentials
 
 # ----- 1. Define which models to test ------------------
 MODEL_MATRIX: dict[str, list[str]] = {
-    "openai":  ["gpt-3.5-turbo", "gpt-4o", "gpt-4o-mini", "o3", "o1", "o4-mini"], 
-    "gemini":  ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.5-flash-preview-05-20", "gemini-2.5-pro-preview-06-05"],
-    "anthropic": ["claude-sonnet-4-20250514", "claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219"],
-    "deepseek":  ["deepseek-chat", "deepseek-reasoner"],
+    "openai":  ["gpt-3.5-turbo", "gpt-4o", "gpt-4o-mini", "o3", "o1", "o4-mini"], #["gpt-3.5-turbo", "gpt-4o", "gpt-4o-mini", "o3", "o1", "o4-mini"]
+    "gemini":  ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.5-flash", "gemini-2.5-pro"], #["gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.5-flash", "gemini-2.5-pro"]
+    "anthropic": ["claude-sonnet-4-20250514", "claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219"], #["claude-sonnet-4-20250514", "claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219"]
+    "deepseek":  ["deepseek-chat", "deepseek-reasoner"], # ["deepseek-chat", "deepseek-reasoner"]
 }
 RUNS_PER_MODEL = os.getenv("RUNS_PER_MODEL")
 

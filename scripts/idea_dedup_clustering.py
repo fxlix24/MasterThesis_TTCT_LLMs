@@ -39,7 +39,7 @@ MYSQL_DSN = {
     "cursorclass": pymysql.cursors.DictCursor,
 }
 
-EXPERIMENT_PHASE = 1 # Alternatively use 'os.getenv("PROJECT_PHASE")' --> returns Integer of currently selected PROJECT_PHASE
+EXPERIMENT_PHASE = os.getenv("PROJECT_PHASE") # Alternatively use 'os.getenv("PROJECT_PHASE")' --> returns Integer of currently selected PROJECT_PHASE
 TABLE          = f"ideas_aut_{EXPERIMENT_PHASE}"    
 ID_FIELD       = "id"
 EMBED_FIELD    = "embedding"          # JSON column with stored vectors
