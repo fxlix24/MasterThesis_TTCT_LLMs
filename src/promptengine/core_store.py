@@ -147,7 +147,30 @@ def _iter_responses(raw: str):
                 if isinstance(value, list) and all(isinstance(d, dict) and "idea" in d for d in value):
                     ideas_list = value
                     break
-        
+            
+            # Case 3: Object with numbered keys like "idea1", "idea2", etc.
+            if ideas_list is None:
+                # Look for keys that match patterns like "idea1", "idea2", etc.
+                idea_keys = []
+                for key in data.keys():
+                    if re.match(r'^idea\d+$', key, re.IGNORECASE):
+                        idea_keys.append(key)
+                
+                if idea_keys:
+                    # Sort keys by their number
+                    idea_keys.sort(key=lambda x: int(re.findall(r'\d+', x)[0]))
+                    
+                    # Convert to list format
+                    ideas_list = []
+                    for key in idea_keys:
+                        value = data[key]
+                        if isinstance(value, str):
+                            # Just the idea text
+                            ideas_list.append({"idea": value})
+                        elif isinstance(value, dict):
+                            # Already in proper format
+                            ideas_list.append(value)
+                    
         # If we found a valid ideas list, process it
         if ideas_list:
             for n, item in enumerate(ideas_list, 1):
