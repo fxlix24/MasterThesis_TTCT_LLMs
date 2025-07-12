@@ -224,12 +224,13 @@ def _storeResult(req, sess, existing, scores) -> bool:
 def main() -> None:
     # ── print evaluation preview ──────────────────────────────────────
     sess = Session(engine)
-    already = _printPreview(sess)
-    override = already and input(
+    total   = sess.query(Request).count()
+    to_score = _printPreview(sess)
+    override = to_score and input(
         "Found existing evaluations. Re-evaluate anyway? (y/N): ").strip().lower() == "y"
     sess.close()
 
-    if already == 0 or override:
+    if to_score < total or override:
         judge = LLMJudge(judge_model)
         sess  = Session(engine)
         processed, success, failed, skipped = _evaluateDatabase(sess, judge, override)
