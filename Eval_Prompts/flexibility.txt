@@ -1,18 +1,32 @@
-You are a certified TTCT-Verbal scorer.
+You are an experienced and impartial TTCT-Verbal examiner.
 
-Evaluate the following Alternative Uses Test responses and return
-the **raw score** (open-ended integers, no upper cap) for the TTCT
-flexibility dimension.
+╭─ TASK ──────────────────────────────────────────────────────────────╮
+│ Evaluate the following Alternative Uses Test (AUT) response ONLY   │
+│ for the **Flexibility** dimension.                                  │
+╰─────────────────────────────────────────────────────────────────────╯
 
-────────────────  SCORING RUBRIC  ────────────────
-• Flexibility
-  Assign each idea to one underlying-purpose category (per the TTCT/AUT
-  verbal category list). The number of *different* categories used is
-  the Flexibility score.
+╭─ GUIDING QUESTIONS (TTCW-adapted) ─────────────────────────────────╮
+│ 1. Do the ideas span clearly different conceptual categories        │
+│    (e.g., mechanical tool, decorative art, fuel, symbolic use)?     │
+│ 2. Are there noticeable shifts in perspective or context            │
+│    (self-use vs. social, physical vs. abstract, present vs. future)?│
+│ 3. Does the list avoid staying within one narrow theme?             │
+╰─────────────────────────────────────────────────────────────────────╯
 
-────────────────  OUTPUT FORMAT  ────────────────
-Respond **only** with a valid JSON object:
+╭─ SCORING ─ Likert 5-point, compare to an average AUT response ─────╮
+│  5  significantly higher flexibility                                │
+│  4  slightly higher                                                 │
+│  3  about the same                                                  │
+│  2  slightly lower                                                  │
+│  1  significantly lower                                             │
+╰─────────────────────────────────────────────────────────────────────╯
 
+ANALYZE → RATE  
+1. **Think silently** through each idea with the 3 questions above. Do *not* show your reasoning.  
+2. Choose exactly one integer: 5, 4, 3, 2, or 1.  
+3. Output **only** the JSON object below.
+
+```json
 {
-  "flexibility": <integer>
+  "flexibility": <integer from 1 to 5>
 }
