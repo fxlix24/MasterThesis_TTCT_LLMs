@@ -4,7 +4,7 @@ library(DBI)
 
 con <- dbConnect(
   RMariaDB::MariaDB(),
-  dbname   = "aut_experiment",
+  dbname   = "aut_data",
   host     = "localhost",   # e.g. "localhost" or an IP / DNS name
   user     = "automation",
   password = rstudioapi::askForPassword("MySQL password"),  # keeps it off-disk
