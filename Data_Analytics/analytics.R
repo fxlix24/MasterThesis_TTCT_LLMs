@@ -175,47 +175,6 @@ for (m in unique(ideas_df$model)) {
 }
 saveRDS(saturation_results, "saturation_breakpoints.rds")
 
-# ── Harvest breakpoints safely ───────────────────────────────────────────────
-# Build one tibble per model, then row‑bind
-bp_list <- purrr::imap(                      # .x = fit, .y = model name
-  saturation_results,
-  function(fit, m) {
-    
-    # Skip if fit is NULL or has no psi at all
-    if (is.null(fit) || is.null(fit$psi) || nrow(fit$psi) == 0) {
-      return(NULL)
-    }
-    
-    # Skip if the expected row is missing
-    if (!"prompt_idx" %in% rownames(fit$psi)) {
-      return(NULL)
-    }
-    
-    # Extract point estimate
-    bp_est <- fit$psi["prompt_idx", "Est."]
-    
-    # Attempt CIs (segmented::confint may fail)
-    ci_out <- try(segmented::confint.segmented(fit), silent = TRUE)
-    ci_low <- ci_high <- NA_real_
-    if (!inherits(ci_out, "try-error") &&
-        "prompt_idx" %in% rownames(ci_out)) {
-      ci_low  <- ci_out["prompt_idx", "Lower"]
-      ci_high <- ci_out["prompt_idx", "Upper"]
-    }
-    
-    tibble::tibble(
-      model      = m,
-      breakpoint = bp_est,
-      ci_low     = ci_low,
-      ci_high    = ci_high
-    )
-  }
-)
-
-bp_tbl <- dplyr::bind_rows(bp_list)          # drop NULLs automatically
-readr::write_csv(bp_tbl, "tbl_breakpoints.csv")
-
-
 # ── 7  UNIQUE‑CLUSTER DIVERSITY (KW + Dunn) ──────────────────────────────────
 # Corrected data preparation: count unique clusters per request
 unique_clusters_per_request <- ideas_df %>%
