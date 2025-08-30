@@ -1,0 +1,16 @@
+source,1,2,3
+claude-3-5-haiku-20241022,12,11,9
+claude-3-7-sonnet-20250219,5,11,3
+claude-sonnet-4-20250514,4,3,6
+deepseek-chat,9,11,12
+deepseek-reasoner,3,4,4
+gemini-1.5-pro,10,8,5
+gemini-2.0-flash,8,7,10
+gemini-2.5-flash,7,5,7
+gemini-2.5-pro,1,2,2
+gpt-3.5-turbo,15,14,14
+gpt-4o,11,13,13
+gpt-4o-mini,14,15,15
+o1,13,9,11
+o3,2,1,1
+o4-mini,6,6,8

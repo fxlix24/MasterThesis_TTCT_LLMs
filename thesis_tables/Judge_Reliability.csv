@@ -1,0 +1,101 @@
+response_id;request_id;model;fluency;auto_flexibility;auto_elaboration;auto_originality;jury1_flexibiliy;jury1_elaboration;jury1_originality;experiment_phase;bullet_point;bullet_details
+179;8;gemini-2.0-flash;28;4;4;2;4;3;2;1;Leveling tool (use two bricks and a board);
+1023;44;gemini-2.0-flash;25;5;4;3;4;1;3;1;Bookend;
+3259;140;gemini-2.0-flash;25;5;4;3;5;5;3;1;Decorative Element;Paint it, decorate it, or simply use its natural texture as a decorative piece.
+3270;141;gemini-2.0-flash;24;5;4;2;4;4;3;1;Bookend;Provides a sturdy support for books on a shelf.
+6428;265;gpt-4o-mini;21;3;3;2;3;3;2;1;Pathway Material;Lay bricks flat to create a walking path in a garden.
+7790;319;claude-sonnet-4-20250514;24;5;4;3;5;4;4;1;Chalk source;Scrape or grind red bricks to create natural chalk for marking surfaces
+12861;537;deepseek-chat;30;5;4;2;5;4;2;1;Step;Bricks can be stacked to create a makeshift step or stool.
+13423;575;deepseek-chat;20;5;4;3;5;4;3;1;Emergency brake;Place a brick behind a car tire to prevent rolling on a slope.
+15637;709;gpt-3.5-turbo;20;4;1;3;4;2;3;1;Smashing and using the broken pieces for mosaic art;
+17704;816;claude-3-7-sonnet-20250219;25;5;4;4;5;4;4;1;Garden border/edging;Line up bricks to create separation between garden areas.
+19152;865;claude-3-7-sonnet-20250219;25;5;4;2;5;4;2;1;Fabric weight;Use to hold fabric in place while cutting patterns for sewing.
+20587;915;o3;75;5;5;3;5;3;5;1;Balloon display weight;Wrap in decorative paper and tie ribbons.
+20653;916;deepseek-reasoner;20;5;5;4;5;5;5;1;Chalk holder;Carve grooves into bricks to hold sidewalk chalk for outdoor drawing sessions.
+20827;920;o3;62;5;5;4;5;5;4;1;Doorbell substitute;Knock a brick against metal gate—loud improvised ringer.
+21102;927;o3;101;5;5;4;5;4;2;1;Fabric weight;Hold patterns while cutting cloth.
+21140;927;o3;101;5;5;4;5;5;4;1;Washing machine vibration damper;Place on top to reduce shake.
+22124;947;o3;121;5;5;5;5;4;5;1;Voting paperweight in windy polling stations;Keeps ballots from drifting.
+22162;948;deepseek-reasoner;20;5;5;4;5;5;4;1;Garden edging;Line flower beds or pathways with partially buried bricks to create clean borders.
+27826;1070;o3;184;5;4;5;4;3;3;1;Bookend;Holds books upright on a shelf.
+28707;1077;o3;117;4;4;3;4;3;4;1;Rain gauge stand;Hold cylinder upright.
+29534;1085;o3;99;5;4;4;5;4;5;1;Pottery grog source;Crushed brick strengthens clay.
+29821;1097;claude-3-7-sonnet-20250219;25;5;4;3;5;4;4;1;Knife sharpener;The rough surface of some bricks can be used to hone knife blades
+30181;1111;claude-3-7-sonnet-20250219;25;5;4;2;4;5;2;1;Step stool;Stack securely to create a small elevation to reach higher places
+32094;1190;gemini-2.5-flash;30;5;5;3;4;5;3;1;Trivet or Hot Pad;To protect surfaces from hot pots, pans, or dishes.
+32946;1218;gemini-2.5-flash;43;5;4;2;5;4;3;1;Surface for Striking Matches;The rough side provides friction to ignite strike-anywhere matches.
+33036;1221;o1;25;3;4;2;3;4;2;1;Candle Holder;A hollowed or indented brick can hold a candle or tea light.
+35289;1305;o1;30;4;5;3;5;5;4;1;Boot Scraper Base;"Keep it near an entrance; scrape mud off shoes against the brick’s rough surface."
+37243;1381;gemini-1.5-pro;20;4;4;2;4;3;4;1;Garden border;Define pathways or garden beds.
+38275;1422;gemini-1.5-pro;22;4;4;3;5;5;4;1;Crack filler (crushed);For filling small cracks in a driveway or walkway (mixed with appropriate materials).
+39914;1487;o4-mini;25;4;4;3;4;4;3;1;Pizza stone substitute;Absorbs and retains heat for baking crusty pizza.
+39985;1490;gemini-1.5-pro;24;5;4;3;5;2;2;1;Weight for a pickle jar or sauerkraut crock;
+40533;1508;o4-mini;25;5;4;3;4;4;3;1;Coffee Table or Shelf Support;Stacked or bonded to create industrial-style furniture legs.
+42956;1580;gemini-2.5-pro;38;5;5;5;5;5;5;1;Mortar;The indentation (or 'frog') on top of some bricks can be used as a small mortar for grinding spices with a stone or hard object as a pestle.
+44096;1611;gemini-2.5-pro;50;5;5;5;5;5;5;1;Geocache Container;A hollowed-out brick can serve as a camouflaged container for a geocaching logbook.
+44150;1613;gemini-2.5-pro;40;5;5;5;5;5;;1;Grill Scraper;Use the hard edge to scrape burnt-on residue off a barbecue grill.
+46554;1700;gpt-3.5-turbo;21;4;2;3;4;1;2;2;Phone stand;
+48185;1782;gemini-2.0-flash;28;5;4;4;5;5;5;2;Improvised suture needle;In an extreme emergency, sterilized and used to suture a wound, but not recommended.
+48368;1792;claude-sonnet-4-20250514;30;5;4;3;5;4;4;2;Wire stripper;Use the metal edge to scrape insulation off thin wires
+49597;1849;deepseek-chat;20;4;3;3;4;5;3;2;Reset button tool;Use a paperclip to press small reset buttons on electronics.
+50818;1899;gemini-2.0-flash;20;4;4;3;4;5;3;2;Emergency SIM card ejector;For phones requiring a tool to access the SIM card tray.
+52767;1980;claude-sonnet-4-20250514;30;5;4;3;5;4;4;2;Glasses repair;Temporary fix for broken glasses frames or loose screws
+52865;1984;gpt-4o;31;4;3;3;4;3;3;2;Mini Screwdriver;Tighten small screws.
+53763;2023;gemini-1.5-pro;21;5;4;3;5;4;4;2;Circuit tester;Can sometimes bridge connections on a circuit board (use with caution)
+54370;2050;gpt-4o;20;3;3;3;4;3;3;2;Plant Support;Attach a paperclip to a stick and support small plants.
+54375;2050;gpt-4o;20;3;3;3;3;3;4;2;Jewelry Fix;Use to temporarily fix broken jewelry chains.
+56102;2128;gemini-1.5-pro;19;5;4;3;4;4;2;2;Bookmark;A simple and readily available way to mark your place in a book.
+56680;2155;gpt-4o;26;5;4;3;5;4;3;2;Hanging hook;Bend into a hook to hang lightweight items.
+57304;2182;gpt-4o-mini;16;3;4;3;3;4;3;2;Phone stand;Bend into a shape that supports a phone for hands-free use.
+59160;2259;gpt-4o-mini;16;4;3;3;4;3;3;2;Chalk holder;Use to hold a piece of chalk for easier drawing.
+60186;2300;gemini-2.5-flash;38;5;4;3;5;5;4;2;Temporary Zipper Pull;To replace a broken zipper pull on clothing, bags, or luggage.
+62457;2385;o3;99;5;5;4;5;5;5;2;Safety-pin alternative;Hold a torn shirt seam until it’s sewn.
+63679;2418;o3;156;5;4;5;5;5;5;2;Antenna extender;Attach to a radio’s telescopic antenna for slightly better reception.
+64674;2441;gemini-2.5-pro;50;5;5;5;5;5;5;2;Zipper pull replacement;Slide it through the hole on a broken zipper slider for a temporary, functional pull.
+66169;2471;o3;92;5;5;4;5;5;4;2;Model-rocket igniter clip;Hold nichrome wire leads.
+70503;2556;deepseek-reasoner;20;4;4;3;4;5;4;2;Cleaning tool;Straighten it to scrape dirt from small crevices like keyboard keys or phone ports.
+71252;2570;deepseek-reasoner;25;5;5;3;5;5;3;2;Lock pick;Bend the paperclip to manipulate tumblers in simple locks during emergencies.
+71929;2582;deepseek-reasoner;25;5;5;4;5;5;5;2;Game piece or token;Use as a placeholder in board games, like a pawn or counter, by bending it for identification.
+72396;2589;o3;114;5;5;5;5;5;5;2;Name-tag holder;Attach badge to clothing without a pin.
+72825;2595;o3;114;5;3;4;5;3;4;2;Fix broken flip-flop strap (poke through and bend);
+73921;2613;o3;127;5;5;5;5;5;5;2;Act as fuse for science project;Thin wire melts at high current demonstrating circuits.
+74505;2622;o3;109;5;5;5;5;5;5;2;Soap-bar saver;Skewer small leftover pieces together
+74660;2625;o3;97;5;5;4;5;5;4;2;Unclog glue or paint nozzle;Poke the dried tip clear.
+77187;2676;o3;108;5;5;4;4;5;4;2;Eject SIM-card trays;Identical in size to the official SIM tool pin.
+79971;2804;claude-3-5-haiku-20241022;14;4;2;3;4;2;3;2;Clean hard-to-reach computer keyboard spaces;
+80005;2806;claude-3-5-haiku-20241022;10;3;4;3;4;4;3;2;Mini sculpture material;Bend and connect for small art projects
+82908;2925;claude-3-7-sonnet-20250219;41;5;4;3;5;4;3;2;Puzzle solver;Use to manipulate and solve certain puzzle types.
+84978;2993;o4-mini;30;5;4;3;4;4;3;2;Photo hanging tool;Hang lightweight frames or prints
+85760;3018;claude-3-7-sonnet-20250219;30;5;4;3;5;5;4;2;Makeshift tweezers;Can be bent to create simple tweezers for picking up small objects.
+88905;3116;gemini-2.5-pro;50;5;5;4;5;5;4;2;Figurine chainmail;Interlink dozens of paperclips to create miniature armor for a doll or action figure.
+90983;3176;gemini-2.5-pro;38;5;5;4;4;5;4;2;Emergency electronic reset tool;Use the tip to press the tiny, recessed reset buttons on routers, modems, and other small electronics.
+91403;3188;gemini-2.0-flash;21;5;4;3;5;4;3;3;Desk Organizer;Keep pens, pencils, and other small items tidy on your desk.
+91455;3190;gpt-3.5-turbo;60;4;1;3;4;1;2;3;Bird bath;
+97533;3482;claude-sonnet-4-20250514;30;5;4;2;5;3;2;3;Meditation bell holder;Place singing bowls or meditation items
+99711;3580;claude-sonnet-4-20250514;25;5;4;3;5;4;3;3;Measuring cup;Use for approximate measurements in cooking or crafts
+101498;3662;gemini-1.5-pro;20;5;4;3;5;4;4;3;Knitting Bowl;Keep your yarn tangle-free by placing it in a bowl while knitting.
+103106;3746;deepseek-chat;52;5;4;3;5;5;3;3;Emergency Wash Basin;Use a bowl to wash small clothing items or undergarments when traveling or in limited spaces.
+104153;3803;gemini-2.5-flash;36;5;4;3;5;4;3;3;Mold;For Jell-O, ice shapes, sandcastles, or craft materials like paper mache or clay.
+104777;3837;gemini-2.5-flash;32;5;4;3;5;4;3;3;Storage for Jewelry/Accessories;Keeps rings, earrings, watches, or hair ties neatly in one place.
+106360;3914;claude-3-7-sonnet-20250219;25;5;4;3;4;4;2;3;Desk organizer;Hold paperclips, thumbtacks, and other small office supplies
+108022;3973;deepseek-chat;30;5;4;3;5;4;3;3;Paperweight;Use a heavy bowl to hold down papers or light objects in windy conditions.
+108755;4001;gemini-2.5-flash;35;5;4;3;4;4;2;3;Desk organizer;For paperclips, pens, erasers, or other small office supplies.
+109630;4034;gemini-2.5-flash;30;5;5;3;5;5;3;3;Plant pot;Perfect for small houseplants, succulents, or herbs, with or without drainage.
+110894;4086;claude-3-7-sonnet-20250219;25;5;4;4;5;2;4;3;Hat for dolls or toys;
+111126;4096;o3;70;5;4;4;4;4;4;3;Birdbath;"Set outside on a stand; add water for visiting birds."
+111957;4117;claude-3-7-sonnet-20250219;30;5;4;4;5;5;4;3;Fruit ripening accelerator;Place unripe fruit with ripe bananas in a bowl to speed ripening
+112144;4123;claude-3-7-sonnet-20250219;25;5;4;3;4;4;3;3;Helmet;In emergency situations or as a costume prop
+114200;4183;o3;149;5;4;3;5;4;3;3;Business-card caddy;Display cards at events.
+115616;4215;deepseek-chat;30;4;3;2;4;3;2;3;Improvised Measuring Cup;Use a bowl to estimate or measure large quantities of ingredients.
+117579;4258;gemini-2.5-pro;35;5;5;4;5;5;5;3;Parabolic Reflector;For a science experiment, use a reflective bowl to focus sound waves (like a listening device) or light (to a focal point).
+117716;4264;o3;99;5;5;4;5;4;4;3;Brush rinse cup;Rinse art or makeup brushes.
+117752;4264;o3;99;5;5;4;5;5;4;3;Loose-leaf tea blender;Stir custom tea mixes.
+118119;4270;gemini-2.5-pro;30;5;5;4;5;5;4;3;Sponge Holder;Keep a wet sponge contained and off the counter by the kitchen sink.
+119303;4295;gemini-2.5-pro;30;5;4;5;5;5;5;3;Protective Food Cover;Invert a large bowl over a plate of food to protect it from insects during outdoor dining.
+121844;4349;o3;63;5;4;5;4;3;4;3;Plant Saucer;Catch drainage under potted plants.
+123217;4380;o3;70;5;5;4;4;5;4;3;Serving scoop;Use as a ladle for punch or soup when nothing else is handy.
+124962;4408;o3;88;4;4;3;4;4;3;3;Incense ash catcher;Place beneath stick burners to collect ash.
+125886;4428;o3;114;5;5;4;5;5;5;3;Pet cone (Elizabethan collar) substitute;Cut the bottom out and secure to keep animals from licking wounds.
+129237;4547;o1;20;4;4;3;5;4;3;3;Mini Water Feature;Fill with water and add floating candles or flowers for a simple decorative water display.
+131226;4628;o4-mini;27;5;4;3;5;4;3;3;Spice organizer;Arrange small amounts of various spices or herbs while cooking.
+133347;4713;o4-mini;28;3;4;3;3;4;3;3;Kitchen Compost Collector;Collect vegetable scraps at the counter before transferring to compost.

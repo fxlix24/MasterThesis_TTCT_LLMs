@@ -1,0 +1,4 @@
+trait,n,bias_mean_diff,sd_diff,loa_lower,loa_upper
+Originality,99,-0.152,0.66,-1.446,1.143
+Elaboration,99,0.04,0.699,-1.329,1.41
+Flexibility,99,0.111,0.449,-0.769,0.992

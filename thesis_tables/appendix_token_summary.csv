@@ -1,0 +1,16 @@
+source,mean_input_tokens,mean_output_tokens,mean_total_tokens,mean_ttct_score,ttct_points_per_1k_tokens
+gpt-3.5-turbo,NA,NA,295.18,25.18,101.2
+claude-3-5-haiku,NA,NA,344.97,20.87,60.8
+gpt-4o,NA,NA,558.49,30.39,54.76
+gemini-1.5-pro,NA,NA,649.59,32.17,50.16
+gpt-4o-mini,NA,NA,604.84,28.73,47.8
+gemini-2.0-flash,NA,NA,821.54,35.8,44.01
+claude-sonnet-4,NA,NA,890.71,37.77,42.77
+deepseek-chat,NA,NA,931.46,38.79,42.58
+claude-3-7-sonnet,NA,NA,956.71,38.73,40.94
+deepseek-reasoner,NA,NA,917.32,33.27,39.6
+o3,NA,NA,3192.4,108.7,36.63
+o4-mini,NA,NA,1582.55,41.2,28.13
+o1,NA,NA,1387.46,33.91,25.19
+gemini-2.5-flash,NA,NA,2692.16,45.75,18.11
+gemini-2.5-pro,NA,NA,3885.65,52.59,13.84
