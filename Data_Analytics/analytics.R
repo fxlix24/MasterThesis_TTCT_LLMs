@@ -1,30 +1,28 @@
 ################################################################################
-#  Thesis analyses for AUT creativity dataset
-#  ─────────────────────────────────────────────────────────────────────────────
-#  Run once if you still need any packages:
-#  to_install <- c("DBI","RMariaDB",
-#                  "dplyr","dbplyr","tidyr","purrr",
-#                  "ggplot2",
-#                  "lme4","lmerTest",
-#                  "emmeans","glmmTMB","performance",
-#                  "ppcor","segmented",
-#                  "FSA",
-#                  "psych","Kendall",
-#                  "broom","readr")
-#  install.packages(to_install)
+#  Thesis analyses for AUT creativity dataset (with table export for all steps)
 ################################################################################
 
 # ── 0  SET‑UP ──────────────────────────────────────────────────────────────────
-library(DBI);       library(RMariaDB)      # native MySQL/MariaDB driver
+# This script assumes you have these packages installed. If not, run:
+# install.packages(c("DBI", "RMariaDB", "dplyr", "dbplyr", "tidyr", "purrr", 
+#                    "ggplot2", "lme4", "lmerTest", "emmeans", "glmmTMB", 
+#                    "performance", "ppcor", "segmented", "FSA", "psych", 
+#                    "broom", "broom.mixed", "readr", "irr"))
+
+library(DBI);       library(RMariaDB)
 library(dbplyr);    library(tidyr);  library(purrr)
 library(ggplot2);   library(lme4);   library(lmerTest)
 library(emmeans);   library(glmmTMB); library(performance)
 library(ppcor);     library(segmented)
 library(FSA);       library(psych);
-library(broom);     library(readr);  library(irr)
-library(dplyr, warn.conflicts = FALSE)     # load *after* others → dplyr wins
+library(broom);     library(broom.mixed); library(readr); library(irr)
+library(dplyr, warn.conflicts = FALSE)
 
-# EDIT ONLY THIS PART ----------------------------------------------------------
+# Create a directory to store all output tables
+dir.create("thesis_tables", showWarnings = FALSE)
+
+# --- Connect to your local database ---
+# !!! IMPORTANT: Update these connection details if they are different for you.
 con <- dbConnect(
   RMariaDB::MariaDB(),
   host     = "localhost",
@@ -36,117 +34,103 @@ con <- dbConnect(
 # -----------------------------------------------------------------------------
 
 # ── 1  LOAD & PRE‑PROCESS ─────────────────────────────────────────────────────
+# (No changes in this section)
 tbl_requests <- tbl(con, "requests")
 tbl_evals    <- tbl(con, "evaluations")
 tbl_ideas_1  <- tbl(con, "ideas_aut_1")
 tbl_ideas_2  <- tbl(con, "ideas_aut_2")
 tbl_ideas_3  <- tbl(con, "ideas_aut_3")
 
-# Request‑level dataset --------------------------------------------------------
 requests_df <- tbl_requests %>%
-  dplyr::select(
-    request_id = id,
-    model,
-    task        = experiment_phase,
-    total_tokens,
-    prompt
-  ) %>%
+  dplyr::select(request_id = id, model, task = experiment_phase, total_tokens, prompt) %>%
   collect()
 
 evals_df <- tbl_evals %>%
-  dplyr::select(request_id,
-                originality, fluency, flexibility, elaboration) %>%
+  dplyr::select(request_id, originality, fluency, flexibility, elaboration) %>%
   collect() %>%
   dplyr::mutate(TTCT_total = originality + fluency + flexibility + elaboration)
 
 ttct_df <- dplyr::left_join(evals_df, requests_df, by = "request_id") %>%
-  dplyr::mutate(
-    source    = factor(model),
-    task      = factor(task),
-    prompt_id = factor(prompt)            # random intercept
-  )
+  dplyr::mutate(source = factor(model), task = factor(task), prompt_id = factor(prompt))
 
-# Idea‑level dataset -----------------------------------------------------------
 ideas_df <- dplyr::bind_rows(
   dplyr::collect(tbl_ideas_1 %>% dplyr::mutate(task = 1)),
   dplyr::collect(tbl_ideas_2 %>% dplyr::mutate(task = 2)),
   dplyr::collect(tbl_ideas_3 %>% dplyr::mutate(task = 3))
 ) %>%
-  dplyr::select(request_id, model, task,
-                cluster_id, bullet_number) %>%
+  dplyr::select(request_id, model, task, cluster_id, bullet_number) %>%
   dplyr::arrange(model, request_id, bullet_number)
 
 # ── 2  DATA‑SCREENING ─────────────────────────────────────────────────────────
+cat("\n--- Running Data Screening ---\n")
 skim <- ttct_df %>%
   dplyr::summarise(dplyr::across(
     c(TTCT_total, originality, fluency),
-    list(min = min,
-         q1  = ~quantile(.x, .25),
-         med = median,
-         q3  = ~quantile(.x, .75),
-         max = max)
+    list(min = min, q1 = ~quantile(.x, .25), med = median, q3 = ~quantile(.x, .75), max = max)
   ))
-print(skim)
+# SAVING: Save summary statistics
+readr::write_csv(skim, "thesis_tables/tbl_summary_stats.csv")
 
-# Normality on TTCT_total  ────────────────
 set.seed(42)
-n_samp <- min(nrow(ttct_df), 5000)               # never exceed population size
+n_samp <- min(nrow(ttct_df), 5000)
 shapiro_res <- shapiro.test(sample(ttct_df$TTCT_total, n_samp))
-print(shapiro_res)
+# SAVING: Save normality test results
+broom::tidy(shapiro_res) %>% readr::write_csv("thesis_tables/tbl_shapiro_test.csv")
 
-# Over‑dispersion on fluency  ─────────────
 poisson_null <- glm(fluency ~ 1, family = poisson, data = ttct_df)
 disp_res     <- performance::check_overdispersion(poisson_null)
-print(disp_res)
+# SAVING: Manually create a table for overdispersion results
+disp_table <- tibble(
+  dispersion_ratio = disp_res$dispersion_ratio,
+  p_value          = disp_res$p_value
+)
+readr::write_csv(disp_table, "thesis_tables/tbl_overdispersion_test.csv")
 
 # ── 3  MAIN TTCT DIFFERENCES (LMM) ────────────────────────────────────────────
+cat("\n--- Running LMM on TTCT Total Score ---\n")
 lmm_ttct <- lmer(TTCT_total ~ source * task + (1|prompt_id), data = ttct_df)
-print(anova(lmm_ttct))
-emm <- emmeans(lmm_ttct, pairwise ~ source | task, adjust = "holm")
-saveRDS(list(model = lmm_ttct, emmeans = emm), "model_lmm_ttct.rds")
+emm_ttct <- emmeans(lmm_ttct, pairwise ~ source | task, adjust = "holm")
+# SAVING: Save full model object
+saveRDS(list(model = lmm_ttct, emmeans = emm_ttct), "model_lmm_ttct.rds")
+# SAVING: Save ANOVA and Post-Hoc tables
+broom.mixed::tidy(anova(lmm_ttct)) %>% readr::write_csv("thesis_tables/tbl_anova_ttct.csv")
+as.data.frame(emm_ttct$contrasts)  %>% readr::write_csv("thesis_tables/tbl_posthoc_ttct.csv")
 
-# ── 4  COUNTS: FLUENCY & ELABORATION (NB‑GLMM) ───────────────────────────────
+# ── 4  COUNTS: FLUENCY & ELABORATION (NB-GLMM) ───────────────────────────────
+cat("\n--- Running NB-GLMM for Fluency & Elaboration ---\n")
 ctrl_long <- glmmTMBControl(optCtrl = list(iter.max = 1e4, eval.max = 1e4))
-
-nb_fluency <- glmmTMB(
-  fluency ~ source * task + (1 | prompt_id),
-  family  = nbinom2,
-  data    = ttct_df,
-  control = ctrl_long
-)
-
-# If that still fails, fall back to nbinom1
-if (!isTRUE(nb_fluency$fit$convergence == 0)) {
-  message("nbinom2 did not converge, retrying with nbinom1 …")
-  nb_fluency <- glmmTMB(
-    fluency ~ source * task + (1 | prompt_id),
-    family  = nbinom1,
-    data    = ttct_df,
-    control = ctrl_long
-  )
-}
-
-nb_elab <- glmmTMB(
-  elaboration ~ source * task + (1 | prompt_id),
-  family  = nbinom2,
-  data    = ttct_df,
-  control = ctrl_long
-)
-
+nb_fluency <- glmmTMB(fluency ~ source * task + (1 | prompt_id), family = nbinom2, data = ttct_df, control = ctrl_long)
+nb_elab <- glmmTMB(elaboration ~ source * task + (1 | prompt_id), family = nbinom2, data = ttct_df, control = ctrl_long)
+# SAVING: Save full model objects
 saveRDS(nb_fluency, "model_nb_fluency.rds")
 saveRDS(nb_elab,    "model_nb_elaboration.rds")
-
+# SAVING: Save tidied model coefficient tables
+broom.mixed::tidy(nb_fluency) %>% readr::write_csv("thesis_tables/tbl_coefficients_fluency.csv")
+broom.mixed::tidy(nb_elab) %>% readr::write_csv("thesis_tables/tbl_coefficients_elaboration.csv")
 
 # ── 5  FLUENCY ↔ ORIGINALITY (partial Spearman) ──────────────────────────────
-pcor_res <- ppcor::pcor.test(
-  x       = ttct_df$originality,
-  y       = ttct_df$fluency,
-  z       = as.numeric(ttct_df$task),
-  method  = "spearman"
-)
-print(pcor_res)
+cat("\n--- Running Partial Correlation ---\n")
+pcor_res <- ppcor::pcor.test(x = ttct_df$originality, y = ttct_df$fluency, z = as.numeric(ttct_df$task), method = "spearman")
+# SAVING: Save partial correlation results directly (it's already a data frame)
+readr::write_csv(pcor_res, "thesis_tables/tbl_partial_corr_orig_flu.csv")
 
 # ── 6  NOVELTY‑SATURATION BREAKPOINTS (segmented) ────────────────────────────
+cat("\n--- Calculating Novelty Saturation Breakpoints ---\n")
+# The robust calculation from your original script is used here
+saturation_results <- list()
+for (m in unique(ideas_df$model)) {
+  sat_df <- ideas_df %>% dplyr::filter(model == m) %>% dplyr::arrange(request_id, bullet_number) %>% dplyr::mutate(prompt_idx = dplyr::row_number(), unique_cluster = !duplicated(cluster_id), cum_unique = cumsum(unique_cluster))
+  psi_start <- max(sat_df$prompt_idx) * 0.5
+  seg_fit <- try(segmented::segmented(lm(cum_unique ~ prompt_idx, data = sat_df), seg.Z = ~prompt_idx, psi = psi_start), silent = TRUE)
+  if (!inherits(seg_fit, "try-error") && !is.null(seg_fit$psi) && nrow(seg_fit$psi) > 0) { saturation_results[[m]] <- seg_fit } else { saturation_results[[m]] <- NULL }
+}
+bp_seg <- imap_dfr(saturation_results, ~ if (is.null(.x) || is.null(.x$psi)) NULL else tibble(model=.y, breakpoint=.x$psi[1,"Est."], method="segmented"))
+fallback_bp <- ideas_df %>% group_by(model) %>% arrange(request_id, bullet_number) %>% mutate(prompt_idx=row_number(), unique_cluster=!duplicated(cluster_id), cum_unique=cumsum(unique_cluster), delta10=cum_unique - lag(cum_unique, 10)) %>% filter(is.na(delta10) | delta10/cum_unique < 0.01) %>% summarise(breakpoint=min(prompt_idx), .groups="drop") %>% mutate(method="fallback")
+bp_tbl <- bind_rows(bp_seg, fallback_bp) %>% group_by(model) %>% slice_min(order_by = method) %>% ungroup()
+# SAVING: Save the final breakpoint table
+readr::write_csv(bp_tbl, "thesis_tables/tbl_saturation_breakpoints.csv")
+
+# ── 6.1  NOVELTY‑SATURATION BREAKPOINTS (segmented advanced) ────────────────────────────
 saturation_results <- list()
 
 for (m in unique(ideas_df$model)) {
@@ -155,14 +139,14 @@ for (m in unique(ideas_df$model)) {
     dplyr::filter(model == m) %>%
     dplyr::arrange(request_id, bullet_number) %>%
     dplyr::mutate(
-      prompt_idx     = dplyr::row_number(),
+      idea_index     = dplyr::row_number(), # <-- RENAMED from prompt_idx
       unique_cluster = !duplicated(cluster_id),
       cum_unique     = cumsum(unique_cluster)
-    )
+      )
   
-  base_lm  <- lm(cum_unique ~ prompt_idx, data = sat_df)
+  base_lm  <- lm(cum_unique ~ idea_index, data = sat_df)
   seg_fit  <- try(
-    segmented::segmented(base_lm, seg.Z = ~prompt_idx, psi = 200),
+    segmented::segmented(base_lm, seg.Z = ~idea_index, psi = 200),
     silent = TRUE
   )
   
@@ -173,152 +157,148 @@ for (m in unique(ideas_df$model)) {
     saturation_results[[m]] <- NULL           # mark as “no breakpoint”
   }
 }
-saveRDS(saturation_results, "saturation_breakpoints.rds")
+saveRDS(saturation_results, "thesis_tables/saturation_breakpoints_prediction.rds")
+
+sat_summary <- imap_dfr(saturation_results, function(fit, model) {
+  if (is.null(fit)) {
+    return(tibble(
+      model = model,
+      converged = FALSE,
+      break_id = NA_integer_,
+      breakpoint = NA_real_,
+      breakpoint_se = NA_real_,
+      slope_before = NA_real_,
+      slope_before_se = NA_real_,
+      slope_after = NA_real_,
+      slope_after_se = NA_real_,
+      AIC = NA_real_,
+      BIC = NA_real_,
+      n_obs = NA_integer_
+    ))
+  }
+  
+  # slopes() returns a list per segmented variable; extract for 'prompt_idx'
+  sl <- slope(fit)$prompt_idx
+  # Ensure it's a data.frame for safe indexing
+  sl <- as.data.frame(sl)
+  
+  # If multiple breakpoints exist, fit$psi has one row per breakpoint.
+  psi <- as.data.frame(fit$psi)
+  names(psi) <- sub("\\.$", "", names(psi))  # clean "Est." -> "Est", etc.
+  
+  # Build one row per breakpoint
+  map_dfr(seq_len(nrow(psi)), function(i) {
+    # For i-th breakpoint, slopes are usually segment i (before) and i+1 (after)
+    # Guard for bounds:
+    before_idx <- i
+    after_idx  <- min(i + 1, nrow(sl))
+    
+    tibble(
+      model = model,
+      converged = TRUE,
+      break_id = i,
+      breakpoint = psi$Est[i],
+      breakpoint_se = psi$St.Err[i],
+      slope_before = sl$Est[before_idx],
+      slope_before_se = sl$St.Err[before_idx],
+      slope_after = sl$Est[after_idx],
+      slope_after_se = sl$St.Err[after_idx],
+      AIC = AIC(fit),
+      BIC = BIC(fit),
+      n_obs = stats::nobs(fit)
+    )
+  })
+})
+
+# Write to CSV
+out_path <- "thesis_tables/saturation_breakpoints_summary.csv"
+write.csv(sat_summary, out_path, row.names = FALSE)
+
 
 # ── 7  UNIQUE‑CLUSTER DIVERSITY (KW + Dunn) ──────────────────────────────────
-# Corrected data preparation: count unique clusters per request
-unique_clusters_per_request <- ideas_df %>%
-  dplyr::group_by(model, request_id) %>%
-  dplyr::summarise(n_unique = n_distinct(cluster_id), .groups = "drop")
-
-# Now, these tests are valid because they compare the *distribution* of n_unique for each model
+cat("\n--- Analyzing Idea Diversity ---\n")
+unique_clusters_per_request <- ideas_df %>% group_by(model, request_id) %>% summarise(n_unique = n_distinct(cluster_id), .groups="drop")
 kw_div  <- kruskal.test(n_unique ~ model, data = unique_clusters_per_request)
-dunn_div <- FSA::dunnTest(n_unique ~ model, data = unique_clusters_per_request,
-                          method = "bonferroni")
-
-# You can also save this more informative table
-# readr::write_csv(unique_clusters_per_request, "tbl_unique_clusters_per_request.csv")
-
-saveRDS(list(kw = kw_div, dunn = dunn_div), "unique_cluster_kw_dunn.rds")
-
-# You would also want to export this for your thesis
-readr::write_csv(
-  unique_clusters_per_request %>%
-    group_by(model) %>%
-    summarise(
-      mean_unique_per_request = mean(n_unique),
-      sd_unique_per_request = sd(n_unique),
-      total_unique = n_distinct(ideas_df$cluster_id[ideas_df$model == first(model)])
-    ),
-  "tbl_unique_cluster_summary.csv"
-)
-
+dunn_div <- FSA::dunnTest(n_unique ~ model, data = unique_clusters_per_request, method = "bonferroni")
+# SAVING: Save the test results
+broom::tidy(kw_div) %>% readr::write_csv("thesis_tables/tbl_kruskal_wallis_diversity.csv")
+readr::write_csv(dunn_div$res, "thesis_tables/tbl_dunn_test_diversity.csv")
 
 # ── 8  COST‑EFFECTIVENESS REGRESSION ─────────────────────────────────────────
-ttct_df <- ttct_df %>%
-  dplyr::mutate(
-    tokens_k        = total_tokens / 1000,
-    creativity_per_k = TTCT_total / tokens_k
-  )
-
+cat("\n--- Analyzing Cost-Effectiveness ---\n")
+ttct_df <- ttct_df %>% mutate(tokens_k = total_tokens / 1000, creativity_per_k = TTCT_total / tokens_k)
 ce_model <- lm(creativity_per_k ~ source + task, data = ttct_df)
+# SAVING: Save full model object
 saveRDS(ce_model, "model_cost_effectiveness.rds")
+# SAVING: Save tidied model results
+broom::tidy(ce_model) %>% readr::write_csv("thesis_tables/tbl_cost_effectiveness.csv")
 
-# ── 9  RANK‑STABILITY (Kendall’s W) ─────────────────────────────────────────-
-rank_matrix <- ttct_df %>%
-  dplyr::group_by(task, source) %>%
-  dplyr::summarise(mean_orig = mean(originality), .groups = "drop") %>%
-  dplyr::group_by(task) %>%
-  dplyr::mutate(rank = rank(-mean_orig)) %>%
-  dplyr::select(task, source, rank) %>%
-  tidyr::pivot_wider(names_from = task, values_from = rank) %>%
-  dplyr::select(-source) %>%
-  as.matrix()
+# --- Compare the model rankings ---
+# Extract coefficients and rankings from the original Linear Model (LM)
+df <- tryCatch(eval(ce_model$call$data, parent.frame()), error = function(e) NULL)
+if (is.null(df)) df <- your_data_frame_name_here
 
-# irr::kendall expects RATERS in rows, SUBJECTS in columns
-kw_rank <- irr::kendall(t(rank_matrix))
-print(kw_rank)
+req <- c("source", "task")  # add any others you use
+stopifnot(all(req %in% names(df)))
 
-# ── 10  EXPORT TIDY TABLES FOR THESIS ────────────────────────────────────────
-# Mixed‑model ANOVA
-broom::tidy(anova(lmm_ttct)) %>% readr::write_csv("tbl_anova_ttct.csv")
-# Post‑hoc contrasts
-as.data.frame(emm$contrasts)  %>% readr::write_csv("tbl_posthoc_ttct.csv")
+df <- dplyr::mutate(df,efficiency = TTCT_total / tokens_k)
+df <- dplyr::filter(df, is.finite(efficiency), efficiency > 0)
 
-# ── Breakpoints (SAFE version) ───────────────────────────────────────────────
-saturation_results <- list()
+ce_model <- lm(efficiency ~ source * task, data = df)
 
-for (m in unique(ideas_df$model)) {
-  
-  sat_df <- ideas_df %>%
-    dplyr::filter(model == m) %>%
-    dplyr::arrange(request_id, bullet_number) %>%
-    dplyr::mutate(
-      prompt_idx     = dplyr::row_number(),          # 1 … 100
-      unique_cluster = !duplicated(cluster_id),
-      cum_unique     = cumsum(unique_cluster)
-    )
-  
-  # data‑driven starting point: midway (≈ 50)
-  psi_start <- max(sat_df$prompt_idx) * 0.5
-  
-  seg_fit <- try(
-    segmented::segmented(
-      lm(cum_unique ~ prompt_idx, data = sat_df),
-      seg.Z = ~prompt_idx,
-      psi   = psi_start      # now inside the 1‑100 window
-    ),
-    silent = TRUE
-  )
-  
-  if (!inherits(seg_fit, "try-error") &&
-      !is.null(seg_fit$psi) &&
-      nrow(seg_fit$psi) > 0) {
-    saturation_results[[m]] <- seg_fit     # keep it
-  } else {
-    saturation_results[[m]] <- NULL        # mark as “no breakpoint”
-  }
-}
-
-saveRDS(saturation_results,
-        "thesis_results/saturation_breakpoints.rds")
-
-##–– Begin breakpoint block ––––––––––––––––––––––––––––––––––––––––––––––––##
-library(dplyr); library(tidyr); library(purrr); library(readr)
-
-# 10.1.  Harvest *segmented* breakpoints  ──────────────────────────────────────
-bp_seg <- imap_dfr(
-  saturation_results,
-  function(fit, m) {
-    if (is.null(fit) || is.null(fit$psi) ||
-        nrow(fit$psi) == 0 ||
-        !"prompt_idx" %in% rownames(fit$psi)) return(NULL)
-    tibble(model      = m,
-           breakpoint = fit$psi["prompt_idx", "Est."],
-           ci_low     = NA_real_,      # CIs optional
-           ci_high    = NA_real_,
-           method     = "segmented")
-  }
+gamma_ce_model <- glm(
+  efficiency ~ source * task,
+  data = df,
+  family = Gamma(link = "log")
 )
 
-# 10.2.  Fallback: <1 % gain over last 10 prompts  ─────────────────────────────
-fallback_bp <- ideas_df %>%
-  group_by(model) %>%
-  arrange(request_id, bullet_number) %>%
-  mutate(prompt_idx     = row_number(),
-         unique_cluster = !duplicated(cluster_id),
-         cum_unique     = cumsum(unique_cluster),
-         delta10        = cum_unique - lag(cum_unique, 10)) %>%
-  filter(is.na(delta10) | delta10 / cum_unique < 0.01) %>%   # <1 % rise
-  summarise(breakpoint = min(prompt_idx), .groups = "drop") %>%
-  mutate(method = "fallback")
+lm_coeffs <- broom::tidy(ce_model) %>%
+  filter(grepl("source", term)) %>%
+  mutate(model = sub("source", "", term),
+         lm_rank = rank(estimate)) %>%
+  # *** FIX APPLIED HERE ***
+  dplyr::select(model, lm_estimate = estimate, lm_rank)
 
-# 10.3.  Combine: use segmented when available, fallback otherwise  ────────────
-bp_tbl <- bind_rows(bp_seg, fallback_bp, .id = NULL) %>%
-  group_by(model) %>%
-  slice_min(order_by = method) %>%          # keep segmented if duplicate
-  ungroup()
+# Extract coefficients and rankings from the new Gamma GLM
+gamma_coeffs <- broom::tidy(gamma_ce_model) %>%
+  filter(grepl("source", term)) %>%
+  mutate(model = sub("source", "", term),
+         gamma_rank = rank(estimate)) %>%
+  # *** FIX APPLIED HERE ***
+  dplyr::select(model, gamma_estimate = estimate, gamma_rank)
 
-# 10.4.  Export to CSV  ────────────────────────────────────────────────────────
-write_csv(bp_tbl, "thesis_results/tables/tbl_breakpoints.csv")
-##–– End breakpoint block ––––––––––––––––––––––––––––––––––––––––––––––––––##
+# Join them for a direct comparison
+comparison_df <- lm_coeffs %>%
+  full_join(gamma_coeffs, by = "model") %>%
+  arrange(lm_rank)
 
+cat("\n--- Comparison of Model Rankings (LM vs. Gamma GLM) ---\n")
+print(comparison_df)
 
-# Cluster diversity counts
-readr::write_csv(unique_clusters_per_request, "tbl_unique_clusters_per_request.csv")
-# Cost‑effectiveness model
-broom::tidy(ce_model)          %>% readr::write_csv("tbl_cost_effectiveness.csv")
+# Export the comparison table
+readr::write_csv(comparison_df, "thesis_tables/tbl_robustness_efficiency_model_comparison.csv")
 
-# ── 11  CLEAN‑UP ──────────────────────────────────────────────────────────────
+# Calculate the correlation between the rankings
+rank_correlation <- cor(comparison_df$lm_rank, comparison_df$gamma_rank, method = "spearman")
+cat(paste("\nSpearman's rank correlation between models:", round(rank_correlation, 4), "\n"))
+
+# ── 9  RANK‑STABILITY (Kendall’s W) ─────────────────────────────────────────-
+cat("\n--- Checking Rank Stability ---\n")
+rank_table <- ttct_df %>% group_by(task, source) %>% summarise(mean_orig = mean(originality), .groups = "drop") %>% group_by(task) %>% mutate(rank = rank(-mean_orig)) %>% dplyr::select(source, task, rank) %>% tidyr::pivot_wider(names_from = task, values_from = rank)
+rank_matrix <- rank_table %>% dplyr::select(-source) %>% as.matrix()
+kw_rank <- irr::kendall(t(rank_matrix))
+# SAVING: Manually create a table for Kendall's W result
+kw_table <- tibble(
+  kendalls_w = kw_rank$value,
+  statistic  = kw_rank$statistic,
+  df         = kw_rank$df,
+  p.value    = kw_rank$p.value,
+  subjects   = kw_rank$subjects,
+  raters     = kw_rank$raters
+)
+readr::write_csv(rank_table, "thesis_tables/tbl_rank_stability_matrix.csv")
+readr::write_csv(kw_table, "thesis_tables/tbl_kendalls_w_result.csv")
+
+# ── 10  CLEAN‑UP ──────────────────────────────────────────────────────────────
 dbDisconnect(con)
-cat("\n✓  All analyses complete and tables exported.\n")
+cat("\n✓  All analyses complete. Tables saved to the 'thesis_tables' folder.\n")

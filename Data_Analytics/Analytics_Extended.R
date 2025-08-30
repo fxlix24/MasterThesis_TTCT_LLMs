@@ -97,23 +97,21 @@ if (!isTRUE(nb_flexibility$fit$convergence == 0)) {
   )
 }
 
-saveRDS(nb_flexibility, "model_nb_flexibility.rds")
+saveRDS(nb_flexibility, "thesis_tables/model_nb_flexibility.rds")
 message("Flexibility model saved to 'model_nb_flexibility.rds'")
 
 
 # ── 3  ANALYSIS 2: SEMANTIC DIVERSITY FROM EMBEDDINGS ────────────────────────
-# Group ideas by request and calculate dispersion for each
-# Set a maximum number of ideas to compare per request.
-# 500 is a good starting point.
-SAMPLE_SIZE <- 500 
+message("\n── Running Analysis 2: Modeling Semantic Diversity... ──")
 
-# Set a maximum number of ideas to compare per request.
+# Group ideas by request and calculate dispersion for each.
+# Using a sample for performance is a good idea for very long requests.
 SAMPLE_SIZE <- 500 
 
 dispersion_df <- ideas_df_with_embeddings %>%
   group_by(request_id) %>%
-  filter(n() > 1) %>%
-  # Use group_modify() to conditionally sample each group
+  filter(n() > 1) %>% # Need at least 2 ideas to calculate distance
+  # Conditionally sample each group if it's too large
   group_modify(~ {
     if (nrow(.) > SAMPLE_SIZE) {
       sample_n(., SAMPLE_SIZE)
@@ -121,37 +119,44 @@ dispersion_df <- ideas_df_with_embeddings %>%
       .
     }
   }) %>%
-  # The data is now correctly sampled, so we can summarise.
   summarise(
-    # This block now contains the FINAL optimization
+    # Efficiently create the embedding matrix and calculate mean cosine distance
     semantic_dispersion = {
-      # Create matrix efficiently with each idea embedding as a row
       embedding_matrix <- do.call(rbind, embedding_vec)
-      # lsa::cosine expects each idea as a column, so we transpose
-      cosine_sim <- cosine(t(embedding_matrix))
-      # Calculate mean distance and return it
-      mean(as.dist(1 - cosine_sim))
+      # lsa::cosine expects columns to be documents/ideas, so we transpose
+      cosine_sim_matrix <- lsa::cosine(t(embedding_matrix))
+      # The distance is 1 - similarity. We take the mean of the unique pairwise distances.
+      mean(as.dist(1 - cosine_sim_matrix))
     },
-    # It's good practice to specify dropping the grouping after summarising
-    .groups = "drop"
+    .groups = "drop" # Ungroup after summarising
   )
 
 # Join dispersion scores with model/task info for modeling
+# We need `ttct_df` here again for the model/task factors
 semantic_df <- ttct_df %>%
   inner_join(dispersion_df, by = "request_id")
 
-# Model semantic dispersion using a linear mixed model
-lmm_dispersion <- feols(
-  semantic_dispersion ~ source * task | prompt_id,
+# --- Model semantic dispersion using a linear mixed model (LMM) with lmerTest ---
+# This is now consistent with the primary LMM in the main analysis script.
+lmm_dispersion <- lmerTest::lmer(
+  semantic_dispersion ~ source * task + (1 | prompt_id),
   data = semantic_df
 )
 
-summary(lmm_dispersion)
+# You can now get a familiar ANOVA table to check for main effects and interactions
+anova_dispersion <- anova(lmm_dispersion)
 
-saveRDS(lmm_dispersion, "model_lmm_semantic_dispersion.rds")
-write_csv(semantic_df, "tbl_semantic_dispersion.csv")
-message("Semantic dispersion model saved to 'model_lmm_semantic_dispersion.rds'")
-message("Semantic dispersion scores saved to 'tbl_semantic_dispersion.csv'")
+# Print a summary to the console
+summary(lmm_dispersion)
+print(anova_dispersion)
+
+# --- Save the results ---
+saveRDS(lmm_dispersion, "thesis_tables/model_lmm_semantic_dispersion.rds")
+write_csv(broom.mixed::tidy(lmm_dispersion), "thesis_tables/tbl_coefficients_semantic_dispersion.csv")
+write_csv(broom::tidy(anova_dispersion), "thesis_tables/tbl_anova_semantic_dispersion.csv")
+
+message("Semantic dispersion model (lmer) saved to 'model_lmm_semantic_dispersion.rds'")
+message("Semantic dispersion scores and model results saved to CSVs.")
 
 # ── 4  ANALYSIS 3: VISUALIZE CONCEPTUAL SPACE (UMAP) FOR EACH TASK ─────────
 
@@ -195,7 +200,7 @@ for (phase in phases) {
     theme(legend.position = "bottom")
   
   # Save the plot with a dynamic filename
-  plot_filename <- paste0("plot_umap_conceptual_space_", phase, ".png")
+  plot_filename <- paste0("thesis_tables/figures/plot_umap_conceptual_space_", phase, ".png")
   ggsave(plot_filename, umap_plot, width = 12, height = 9, dpi = 300)
   message(paste("UMAP plot saved to", plot_filename))
 }
