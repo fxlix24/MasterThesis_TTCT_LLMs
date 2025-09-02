@@ -1,4 +1,7 @@
-trait,n,bias_mean_diff,sd_diff,loa_lower,loa_upper
-Originality,99,-0.152,0.66,-1.446,1.143
-Elaboration,99,0.04,0.699,-1.329,1.41
-Flexibility,99,0.111,0.449,-0.769,0.992
+judge,trait,n,bias_mean_diff,sd_diff,loa_lower,loa_upper,loa_width
+auto,Originality,99,-0.152,0.66,-1.446,1.143,2.588
+auto,Elaboration,100,0.04,0.695,-1.322,1.402,2.725
+auto,Flexibility,100,0.11,0.447,-0.766,0.986,1.753
+llm2,Originality,99,-0.869,1.251,-3.32,1.583,4.903
+llm2,Elaboration,100,-0.65,0.845,-2.307,1.007,3.314
+llm2,Flexibility,100,-1.07,0.891,-2.815,0.675,3.491

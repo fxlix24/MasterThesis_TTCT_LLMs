@@ -1,4 +1,7 @@
-trait,correlation_rho,p_value,statistic_S
-Originality,0.738,0,42292.922
-Elaboration,0.68,0,51759.227
-Flexibility,0.644,0,57625.873
+judge,trait,correlation_rho,p_value,statistic_S,n
+auto,Originality,0.738,0,42292.922,99
+auto,Elaboration,0.684,0,52606.706,100
+auto,Flexibility,0.645,0,59231.504,100
+llm2,Originality,0.303,0.002,112693.058,99
+llm2,Elaboration,0.499,0,83563.057,100
+llm2,Flexibility,0.398,0,100278.132,100

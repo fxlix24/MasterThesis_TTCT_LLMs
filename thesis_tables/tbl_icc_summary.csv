@@ -1,0 +1,4 @@
+trait,icc_type,icc,lbound,ubound,p_value,k_raters,n_items
+Originality,"ICC(2,1)",0.324,0.166,0.473,0,3,99
+Elaboration,"ICC(2,1)",0.505,0.291,0.661,0,3,100
+Flexibility,"ICC(2,1)",0.202,0.016,0.39,0.015,3,100

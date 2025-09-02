@@ -1,0 +1,16 @@
+model,breakpoint,method
+claude-3-5-haiku-20241022,1,fallback
+claude-3-7-sonnet-20250219,1,fallback
+claude-sonnet-4-20250514,1,fallback
+deepseek-chat,1,fallback
+deepseek-reasoner,1,fallback
+gemini-1.5-pro,1,fallback
+gemini-2.0-flash,1,fallback
+gemini-2.5-flash,1,fallback
+gemini-2.5-pro,1,fallback
+gpt-3.5-turbo,1,fallback
+gpt-4o,1,fallback
+gpt-4o-mini,1,fallback
+o1,1,fallback
+o3,1,fallback
+o4-mini,1,fallback

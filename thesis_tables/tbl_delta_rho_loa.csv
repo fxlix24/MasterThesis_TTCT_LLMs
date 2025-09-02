@@ -1,0 +1,4 @@
+trait,rho_auto_human,rho_llm2_human,delta_rho,bias_auto,bias_llm2,delta_bias,loa_lower_auto,loa_upper_auto,loa_width_auto,loa_lower_llm2,loa_upper_llm2,loa_width_llm2,delta_loa_width
+Originality,0.738,0.303,-0.435,-0.152,-0.869,-0.717,-1.446,1.143,2.588,-3.32,1.583,4.903,2.315
+Elaboration,0.684,0.499,-0.185,0.04,-0.65,-0.69,-1.322,1.402,2.725,-2.307,1.007,3.314,0.589
+Flexibility,0.645,0.398,-0.247,0.11,-1.07,-1.18,-0.766,0.986,1.753,-2.815,0.675,3.491,1.738

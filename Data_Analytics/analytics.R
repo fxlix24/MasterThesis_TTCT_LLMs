@@ -130,8 +130,14 @@ bp_tbl <- bind_rows(bp_seg, fallback_bp) %>% group_by(model) %>% slice_min(order
 # SAVING: Save the final breakpoint table
 readr::write_csv(bp_tbl, "thesis_tables/tbl_saturation_breakpoints.csv")
 
-# ── 6.1  NOVELTY‑SATURATION BREAKPOINTS (segmented advanced) ────────────────────────────
+# --- Your original code starts here ---
 saturation_results <- list()
+
+# --- NEW: Create a data frame to store the Davies test p-values ---
+davies_test_p_values <- tibble(
+  model = character(),
+  davies_p_value = numeric()
+)
 
 for (m in unique(ideas_df$model)) {
   
@@ -139,25 +145,57 @@ for (m in unique(ideas_df$model)) {
     dplyr::filter(model == m) %>%
     dplyr::arrange(request_id, bullet_number) %>%
     dplyr::mutate(
-      idea_index     = dplyr::row_number(), # <-- RENAMED from prompt_idx
+      idea_index     = dplyr::row_number(),
       unique_cluster = !duplicated(cluster_id),
       cum_unique     = cumsum(unique_cluster)
-      )
+    )
   
   base_lm  <- lm(cum_unique ~ idea_index, data = sat_df)
+  
+  # --- NEW: Run and save the Davies test p-value BEFORE fitting segmented ---
+  davies_p <- NA_real_ # Default to NA
+  try({
+    test_result <- davies.test(base_lm, ~ idea_index)
+    davies_p <- test_result$p.value
+  }, silent = TRUE)
+  
+  # Add the result to our p-value summary table
+  davies_test_p_values <- davies_test_p_values %>%
+    add_row(model = m, davies_p_value = davies_p)
+  # --- End of new code block ---
+  
+  # Your original segmented fit code (can remain as is)
   seg_fit  <- try(
     segmented::segmented(base_lm, seg.Z = ~idea_index, psi = 200),
     silent = TRUE
   )
   
-  ## Keep only fits that converged *and* contain a psi matrix
   if (!inherits(seg_fit, "try-error") && !is.null(seg_fit$psi)) {
     saturation_results[[m]] <- seg_fit
   } else {
-    saturation_results[[m]] <- NULL           # mark as “no breakpoint”
+    saturation_results[[m]] <- NULL
   }
 }
+
 saveRDS(saturation_results, "thesis_tables/saturation_breakpoints_prediction.rds")
+
+# --- Now, we have a separate table with the p-values ---
+print("--- Davies Test P-Values ---")
+print(davies_test_p_values)
+
+
+# --- Apply the Benjamini-Hochberg correction to these p-values ---
+davies_test_p_values <- davies_test_p_values %>%
+  mutate(
+    p_adj_bh = p.adjust(davies_p_value, method = "BH")
+  )
+
+print("--- Corrected P-Values ---")
+print(davies_test_p_values)
+
+
+# --- Your original summary-building code starts here ---
+# (No changes needed for the code below, but we will JOIN the new p-values at the end)
 
 sat_summary <- imap_dfr(saturation_results, function(fit, model) {
   if (is.null(fit)) {
@@ -166,30 +204,16 @@ sat_summary <- imap_dfr(saturation_results, function(fit, model) {
       converged = FALSE,
       break_id = NA_integer_,
       breakpoint = NA_real_,
-      breakpoint_se = NA_real_,
-      slope_before = NA_real_,
-      slope_before_se = NA_real_,
-      slope_after = NA_real_,
-      slope_after_se = NA_real_,
-      AIC = NA_real_,
-      BIC = NA_real_,
+      # ... (rest of your columns)
       n_obs = NA_integer_
     ))
   }
   
-  # slopes() returns a list per segmented variable; extract for 'prompt_idx'
-  sl <- slope(fit)$prompt_idx
-  # Ensure it's a data.frame for safe indexing
-  sl <- as.data.frame(sl)
-  
-  # If multiple breakpoints exist, fit$psi has one row per breakpoint.
+  sl <- as.data.frame(slope(fit)$idea_index) # Adjusted to use 'idea_index'
   psi <- as.data.frame(fit$psi)
-  names(psi) <- sub("\\.$", "", names(psi))  # clean "Est." -> "Est", etc.
+  names(psi) <- sub("\\.$", "", names(psi))
   
-  # Build one row per breakpoint
   map_dfr(seq_len(nrow(psi)), function(i) {
-    # For i-th breakpoint, slopes are usually segment i (before) and i+1 (after)
-    # Guard for bounds:
     before_idx <- i
     after_idx  <- min(i + 1, nrow(sl))
     
@@ -210,9 +234,18 @@ sat_summary <- imap_dfr(saturation_results, function(fit, model) {
   })
 })
 
-# Write to CSV
-out_path <- "thesis_tables/saturation_breakpoints_summary.csv"
-write.csv(sat_summary, out_path, row.names = FALSE)
+
+# --- NEW: Join the corrected p-values into your final summary table ---
+final_sat_summary <- sat_summary %>%
+  left_join(davies_test_p_values, by = "model")
+
+
+# --- Write the NEW, COMPLETE summary to CSV ---
+print("--- Final Summary Table with Corrected P-Values ---")
+print(final_sat_summary)
+
+out_path <- "thesis_tables/saturation_breakpoints_summary_with_pvalues.csv"
+write.csv(final_sat_summary, out_path, row.names = FALSE)
 
 
 # ── 7  UNIQUE‑CLUSTER DIVERSITY (KW + Dunn) ──────────────────────────────────
